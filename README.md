@@ -36,7 +36,13 @@ etc. — nesse caso me avise que eu adapto o projeto).
   - O campo **Registrado por** é uma lista fixa: Maj Tiago Felix, Maj Torres, ST Bacchiega.
 - **Histórico**: 1.471 registros da planilha + todos os lançamentos do app, pesquisáveis e filtráveis.
 - **Partidos**: cadastro, edição e exclusão de partidos e seu espectro, direto no app (sem mexer no código). A lista inicial vem da planilha e é carregada automaticamente no primeiro acesso.
-- **Imagem da assessoria** como plano de fundo, em todas as telas.
+- **Imagem da assessoria** como plano de fundo, e o **brasão institucional** no login e no cabeçalho.
+- **Comparação de múltiplos anos** no painel: selecione um ou vários anos para consolidar os gráficos.
+- **Exportação para PowerPoint** (PPTX) com **gráficos nativos editáveis**: o painel inteiro ou cada gráfico individualmente, respeitando os filtros aplicados.
+- **Exportação de gráficos em PNG**.
+- **Dois novos gráficos**: os 10 mais visitados/contatados e os 10 partidos mais contatados.
+- **Rótulos de dados** nos gráficos (ocultos automaticamente no celular para não poluir; aparecem ao tocar/passar o cursor).
+
 
 ## Passo a passo para publicar
 
