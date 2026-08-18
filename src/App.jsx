@@ -4,6 +4,7 @@ import { supabase } from "./lib/supabaseClient.js";
 import { HISTORICO_DATA } from "./data/historico.js";
 import { usePartidos } from "./components/usePartidos.js";
 import bgImage from "./bg.jpg";
+import brasao from "./brasao.png";
 import Login from "./components/Login.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import NovoRegistro from "./components/NovoRegistro.jsx";
@@ -89,7 +90,7 @@ export default function App() {
     return <div className="login-loading">Carregando…</div>;
   }
   if (session === null) {
-    return <Login bgImage={bgImage} />;
+    return <Login bgImage={bgImage} brasao={brasao} />;
   }
 
   return (
@@ -98,9 +99,9 @@ export default function App() {
 
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark">A4.6</span>
+          <img src={brasao} className="brand-brasao" alt="Brasão da Assessoria Parlamentar do Gabinete do Comandante do Exército" />
           <div className="brand-text">
-            <span className="brand-title">CONTROLE DE VISITAS/CONTATOS</span>
+            <span className="brand-title">MÉTRICAS DE GESTÃO</span>
             <span className="brand-sub">A4.6 - Subassessoria de Orçamento</span>
           </div>
         </div>

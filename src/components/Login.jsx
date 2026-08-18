@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabaseClient.js";
 
-export default function Login({ bgImage }) {
+export default function Login({ bgImage, brasao }) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
@@ -20,9 +20,9 @@ export default function Login({ bgImage }) {
     <div className="login-screen">
       {bgImage && <div className="login-bg" style={{ backgroundImage: `url(${bgImage})` }} />}
       <div className="login-card">
-        <div className="login-mark">A4.6</div>
-        <h1 className="login-title">Controle de Visitas/Contatos</h1>
-        <p className="login-sub">A4.6 - Subassessoria de Orçamento. Entre com a conta da equipe para lançar e consultar contatos.</p>
+        {brasao && <img src={brasao} className="login-brasao" alt="Brasão da Assessoria Parlamentar do Gabinete do Comandante do Exército" />}
+        <h1 className="login-title">MÉTRICAS DE GESTÃO</h1>
+        <p className="login-sub">A4.6 - Subassessoria de Orçamento</p>
         <form className="login-form" onSubmit={entrar}>
           <label className="field">
             <span className="field-label">E-mail</span>
