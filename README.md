@@ -26,6 +26,14 @@ etc. — nesse caso me avise que eu adapto o projeto).
 ---
 
 
+
+## Suas atualizações preservam o histórico
+
+Os lançamentos ficam no banco de dados (Supabase), **separados do código**. Quando
+você atualiza o aplicativo no GitHub, apenas o código é substituído — o banco nunca
+é tocado. Portanto **todo o histórico de lançamentos é preservado automaticamente**
+a cada atualização, sem que você precise fazer backup ou qualquer passo extra.
+
 ## Recursos do aplicativo
 
 - **Tela de login** protegendo o acesso (contas criadas no Supabase).
@@ -35,7 +43,10 @@ etc. — nesse caso me avise que eu adapto o projeto).
   - Para **AsPar EB**, há seleção do **estado** do assessor e do **assunto** (Cartilha, Dúvida ou Ajuste de emenda).
   - O campo **Registrado por** é uma lista fixa: Maj Tiago Felix, Maj Torres, ST Bacchiega.
 - **Histórico**: 1.471 registros da planilha + todos os lançamentos do app, pesquisáveis e filtráveis.
-- **Partidos**: cadastro, edição e exclusão de partidos e seu espectro, direto no app (sem mexer no código). A lista inicial vem da planilha e é carregada automaticamente no primeiro acesso.
+- **Configurações** (aba do cabeçalho), com duas seções recolhíveis:
+  - **Partidos e espectro**: cadastro, edição e exclusão de partidos, direto no app.
+  - **Usuários**: cadastro dos nomes que aparecem no app e associação ao e-mail de login.
+- **"Registrado por" automático**: preenchido pelo nome vinculado ao e-mail que fez login.
 - **Imagem da assessoria** como plano de fundo, e o **brasão institucional** no login e no cabeçalho.
 - **Comparação de múltiplos anos** no painel: selecione um ou vários anos para consolidar os gráficos.
 - **Exportação para PowerPoint** (PPTX) com **gráficos nativos editáveis**: o painel inteiro ou cada gráfico individualmente, respeitando os filtros aplicados.

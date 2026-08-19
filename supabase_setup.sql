@@ -47,9 +47,37 @@ create policy "partidos_update_autenticados"
 create policy "partidos_delete_autenticados"
   on public.partidos for delete to authenticated using (true);
 
+-- ========== TABELA DE USUÁRIOS (nome exibido + e-mail de login) ==========
+-- Vincula o e-mail que faz login a um nome amigável, usado para preencher
+-- automaticamente o campo "Registrado por" nos lançamentos.
+-- A CRIAÇÃO DO LOGIN em si continua sendo feita no painel do Supabase
+-- (Authentication > Users); aqui só guardamos a associação nome <-> e-mail.
+create table if not exists public.usuarios (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  email text,                   -- e-mail de login associado (pode ficar vazio até você preencher)
+  criado_em timestamptz not null default now()
+);
+
+alter table public.usuarios enable row level security;
+
+create policy "usuarios_select_autenticados"
+  on public.usuarios for select to authenticated using (true);
+create policy "usuarios_insert_autenticados"
+  on public.usuarios for insert to authenticated with check (true);
+create policy "usuarios_update_autenticados"
+  on public.usuarios for update to authenticated using (true) with check (true);
+create policy "usuarios_delete_autenticados"
+  on public.usuarios for delete to authenticated using (true);
+
 -- ========== TEMPO REAL (todos veem os lançamentos na hora) ==========
 alter publication supabase_realtime add table public.registros;
 alter publication supabase_realtime add table public.partidos;
+alter publication supabase_realtime add table public.usuarios;
 
--- Observação: a lista inicial de partidos (vinda da planilha) é inserida
--- automaticamente pelo próprio app no primeiro acesso, caso a tabela esteja vazia.
+-- Observações:
+-- - A lista inicial de partidos (vinda da planilha) é inserida automaticamente
+--   pelo app no primeiro acesso, caso a tabela esteja vazia.
+-- - A lista inicial de usuários (Maj Tiago Felix, Maj Torres, ST Bacchiega) também
+--   é semeada pelo app no primeiro acesso; você depois associa o e-mail de cada um
+--   na aba Configurações > Usuários.
