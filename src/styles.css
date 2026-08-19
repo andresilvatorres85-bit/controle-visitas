@@ -52,10 +52,11 @@ body { margin: 0; }
 
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 24px; background: rgba(10, 16, 13, 0.82);
+  padding: 20px 24px; background: rgba(10, 16, 13, 0.92);
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
-  position: sticky; top: 0; z-index: 10;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  padding-top: calc(20px + env(safe-area-inset-top, 0px));
 }
 .brand { display: flex; align-items: center; gap: 14px; }
 .brand-mark {
@@ -87,8 +88,8 @@ body { margin: 0; }
 }
 .logout-btn:hover { background: var(--surface-hi); color: var(--ink); }
 
-.main { flex: 1; padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
-@media (min-width: 860px) { .main { padding-bottom: 36px; } }
+.main { flex: 1; padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); padding-top: calc(86px + env(safe-area-inset-top, 0px)); }
+@media (min-width: 860px) { .main { padding-bottom: 36px; padding-top: 92px; } }
 
 .view-pad { max-width: 1080px; margin: 0 auto; padding: 26px 18px 8px; }
 @media (min-width: 860px) { .view-pad { padding: 34px 28px 8px; } }
@@ -96,10 +97,10 @@ body { margin: 0; }
 .page-title { font-family: var(--font-display); font-weight: 600; font-size: 25px; margin: 0 0 3px; }
 .page-sub { color: var(--muted); font-size: 13.5px; margin: 0 0 22px; }
 
-.dash-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.dash-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
 .dash-header > div { min-width: 0; }
-@media (max-width: 639px) {
-  .dash-header { flex-direction: column; align-items: stretch; }
+@media (max-width: 767px) {
+  .dash-header { flex-direction: column; align-items: stretch; gap: 14px; }
   .dash-header .btn { width: 100%; justify-content: center; }
 }
 .select-year { width: auto; max-width: 110px; font-family: var(--font-mono); font-weight: 500; margin-bottom: 22px; }
@@ -238,7 +239,11 @@ select.input option { background: var(--surface-solid); color: var(--ink); }
 .loading-state { padding: 60px; text-align: center; color: var(--muted); }
 
 .partido-form { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 8px; }
-@media (min-width: 640px) { .partido-form { grid-template-columns: 1fr 2fr auto auto; align-items: end; } }
+@media (min-width: 640px) {
+  .partido-form { grid-template-columns: 1fr 2fr auto auto; align-items: start; }
+  /* alinha o botão com a linha dos inputs (ignora a altura dos hints) */
+  .partido-form .btn { margin-top: 25px; }
+}
 .partido-count { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
 
 .login-screen {
