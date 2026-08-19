@@ -1,15 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Plus, LayoutDashboard, History, Check, X, LogOut, Landmark } from "lucide-react";
+import { Plus, LayoutDashboard, History, Check, X, LogOut, Settings } from "lucide-react";
 import { supabase } from "./lib/supabaseClient.js";
 import { HISTORICO_DATA } from "./data/historico.js";
 import { usePartidos } from "./components/usePartidos.js";
+import { useUsuarios, nomePorEmail } from "./components/useUsuarios.js";
 import bgImage from "./bg.jpg";
 import brasao from "./brasao.png";
 import Login from "./components/Login.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import NovoRegistro from "./components/NovoRegistro.jsx";
 import Historico from "./components/Historico.jsx";
-import Partidos from "./components/Partidos.jsx";
+import Configuracoes from "./components/Configuracoes.jsx";
 
 // Converte uma linha da tabela "registros" (Supabase) para o formato interno
 // enxuto usado pelos componentes (mesmas chaves do histórico da planilha).
@@ -28,7 +29,7 @@ const NAV = [
   { id: "dashboard", label: "Painel", icon: LayoutDashboard },
   { id: "novo", label: "Lançar", icon: Plus },
   { id: "historico", label: "Histórico", icon: History },
-  { id: "partidos", label: "Partidos", icon: Landmark },
+  { id: "config", label: "Configurações", icon: Settings },
 ];
 
 export default function App() {
@@ -40,6 +41,10 @@ export default function App() {
   const [online, setOnline] = useState(true);
 
   const { partidos, mapaEspectro, carregado: partidosCarregados } = usePartidos(session);
+  const { usuarios, carregado: usuariosCarregados } = useUsuarios(session);
+
+  const emailAtual = session?.user?.email || null;
+  const autorAtual = nomePorEmail(usuarios, emailAtual);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session ?? null));
@@ -120,16 +125,16 @@ export default function App() {
       </header>
 
       <main className="main">
-        {!loadedNovos || !partidosCarregados ? (
+        {!loadedNovos || !partidosCarregados || !usuariosCarregados ? (
           <div className="loading-state">Carregando…</div>
         ) : view === "dashboard" ? (
           <Dashboard allRecords={allRecords} novos={novos} />
         ) : view === "novo" ? (
-          <NovoRegistro onSaved={handleSaved} nextProtocolo={nextProtocolo} partidos={partidos} mapaEspectro={mapaEspectro} />
+          <NovoRegistro onSaved={handleSaved} nextProtocolo={nextProtocolo} partidos={partidos} mapaEspectro={mapaEspectro} autorAtual={autorAtual} emailAtual={emailAtual} />
         ) : view === "historico" ? (
           <Historico allRecords={allRecords} onDelete={handleDelete} />
         ) : (
-          <Partidos partidos={partidos} />
+          <Configuracoes partidos={partidos} usuarios={usuarios} emailAtual={emailAtual} />
         )}
       </main>
 

@@ -16,8 +16,13 @@ export const ESTADOS = [
 // Assuntos possíveis para contatos com Assessores Parlamentares do Exército
 export const ASSUNTOS_ASPAR = ["Cartilha", "Dúvida", "Ajuste de emenda"];
 
-// Nomes fixos de quem registra os contatos
-export const REGISTRADORES = ["Maj Tiago Felix", "Maj Torres", "ST Bacchiega"];
+// Órgãos/consultorias disponíveis no lançamento de Consultor
+export const ORGAOS_CONSULTORIA = [
+  { sigla: "CONOF", nome: "Consultoria de Orçamento da Câmara" },
+  { sigla: "CONORF", nome: "Consultoria de Orçamento do Senado" },
+  { sigla: "CMO", nome: "Comissão Mista de Orçamento" },
+  { sigla: "INOP", nome: "Instituto Nacional de Orçamento Público" },
+];
 
 export const MESES = ["", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 export const MESES_LONGO = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];

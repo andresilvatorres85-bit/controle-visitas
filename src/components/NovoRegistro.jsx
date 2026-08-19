@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Plus, Landmark, Building2, UserCog, ShieldCheck } from "lucide-react";
 import { Field } from "./UI.jsx";
-import { UFS, ESTADOS, ASSUNTOS_ASPAR, REGISTRADORES, MESES_LONGO, ESP_LABEL } from "../constants.js";
+import { UFS, ESTADOS, ASSUNTOS_ASPAR, ORGAOS_CONSULTORIA, MESES_LONGO, ESP_LABEL } from "../constants.js";
 import { protocolo, todayParts } from "../helpers.js";
 import { supabase } from "../lib/supabaseClient.js";
 
-export default function NovoRegistro({ onSaved, nextProtocolo, partidos, mapaEspectro }) {
+export default function NovoRegistro({ onSaved, nextProtocolo, partidos, mapaEspectro, autorAtual, emailAtual }) {
   const hoje = todayParts();
   const [tipo, setTipo] = useState("Dep"); // 'Sen' | 'Dep' | 'Consultor' | 'AsPar'
   const [nome, setNome] = useState("");
@@ -18,7 +18,6 @@ export default function NovoRegistro({ onSaved, nextProtocolo, partidos, mapaEsp
   const [dia, setDia] = useState(hoje.d);
   const [mes, setMes] = useState(hoje.m);
   const [ano, setAno] = useState(hoje.y);
-  const [autor, setAutor] = useState(REGISTRADORES[0]);
   const [erro, setErro] = useState("");
   const [ok, setOk] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -34,7 +33,7 @@ export default function NovoRegistro({ onSaved, nextProtocolo, partidos, mapaEsp
   async function submeter(e) {
     e.preventDefault();
     setErro(""); setOk(null);
-    if (!autor) { setErro('Selecione quem está registrando em "Registrado por".'); return; }
+    if (!autorAtual) { setErro('Seu e-mail de login ainda não está vinculado a um nome. Peça para cadastrarem em Configurações > Usuários.'); return; }
 
     if (tipo === "Consultor") {
       if (!nome.trim()) { setErro("Informe o nome do consultor."); return; }
@@ -63,7 +62,7 @@ export default function NovoRegistro({ onSaved, nextProtocolo, partidos, mapaEsp
       papel: role,
       espectro: (tipo === "Consultor" || tipo === "AsPar") ? null : espFinal,
       assunto: tipo === "AsPar" ? assunto : null,
-      autor,
+      autor: autorAtual,
       protocolo: protocolo(ano, nextProtocolo),
     };
 
@@ -144,11 +143,11 @@ export default function NovoRegistro({ onSaved, nextProtocolo, partidos, mapaEsp
               </Field>
             </>
           ) : tipo === "Consultor" ? (
-            <Field label="Órgão / consultoria" hint="Ex.: CONOF (Câmara) ou CONORF (Senado)">
-              <input className="input" list="orgaos-list" value={orgao} onChange={e => setOrgao(e.target.value)} placeholder="CONOF, CONORF..." />
-              <datalist id="orgaos-list">
-                <option value="CONOF" /><option value="CONORF" />
-              </datalist>
+            <Field label="Órgão / consultoria">
+              <select className="input" value={orgao} onChange={e => setOrgao(e.target.value)}>
+                <option value="">Selecione o órgão…</option>
+                {ORGAOS_CONSULTORIA.map(o => <option key={o.sigla} value={o.sigla}>{o.sigla} — {o.nome}</option>)}
+              </select>
             </Field>
           ) : (
             <>
@@ -181,10 +180,10 @@ export default function NovoRegistro({ onSaved, nextProtocolo, partidos, mapaEsp
             </div>
           </Field>
 
-          <Field label="Registrado por" required>
-            <select className="input" value={autor} onChange={e => setAutor(e.target.value)}>
-              {REGISTRADORES.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
+          <Field label="Registrado por" hint={autorAtual ? "Preenchido automaticamente pelo seu login." : "Seu e-mail ainda não está vinculado a um nome."}>
+            {autorAtual
+              ? <div className="registrado-auto">{autorAtual}</div>
+              : <div className="registrado-auto registrado-auto-alerta">{emailAtual || "—"} <span>(vincule em Configurações → Usuários)</span></div>}
           </Field>
         </div>
 
