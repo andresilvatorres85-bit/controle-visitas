@@ -1,7 +1,7 @@
 {
-  "name": "Métricas de Gestão",
-  "short_name": "Métricas de Gestão",
-  "description": "Controle de visitas e contatos parlamentares — A4.6 Subassessoria de Orçamento",
+  "name": "Gestão A4.6",
+  "short_name": "Gestão A4.6",
+  "description": "Métricas de contatos parlamentares e espelhos de emenda LEXOR — A4.6 Subassessoria de Orçamento",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

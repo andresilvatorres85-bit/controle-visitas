@@ -21,7 +21,7 @@ export default function Login({ bgImage, brasao }) {
       {bgImage && <div className="login-bg" style={{ backgroundImage: `url(${bgImage})` }} />}
       <div className="login-card">
         {brasao && <img src={brasao} className="login-brasao" alt="Brasão da Assessoria Parlamentar do Gabinete do Comandante do Exército" />}
-        <h1 className="login-title">MÉTRICAS DE GESTÃO</h1>
+        <h1 className="login-title">GESTÃO</h1>
         <p className="login-sub">A4.6 - Subassessoria de Orçamento</p>
         <form className="login-form" onSubmit={entrar}>
           <label className="field">

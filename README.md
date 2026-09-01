@@ -1,8 +1,14 @@
-# Controle de Visitas — Subassessoria Parlamentar de Orçamento
+# Gestão A4.6 — Subassessoria Parlamentar de Orçamento
 
-Aplicativo web para registrar e consultar contatos com senadores, deputados,
-seus assessores e consultores legislativos de orçamento. Já vem com o
-histórico da planilha (1.471 registros, maio/2024 a agosto/2026) carregado.
+Aplicativo web com duas frentes de trabalho da subassessoria, organizadas em
+duas abas no cabeçalho:
+
+- **MÉTRICAS** — registro e consulta de contatos com senadores, deputados, seus
+  assessores e consultores legislativos de orçamento. Reúne as seções Painel,
+  Lançar, Histórico e Configurações. Já vem com o histórico da planilha
+  (1.471 registros, maio/2024 a agosto/2026) carregado.
+- **LEXOR** — geração dos espelhos de emenda no formato oficial, a partir do
+  `Controle_LEXOR.xlsx`, substituindo a mala direta do Word.
 
 Feito para ser hospedado de graça no **GitHub Pages**, com os dados novos
 (lançados pela equipe) guardados num banco de dados gratuito no **Supabase**.
@@ -140,6 +146,20 @@ No painel do Supabase: **Authentication** → **Users** → **Add user**. Cada
 novo e-mail/senha criado ali já consegue entrar no app imediatamente, sem
 precisar mexer em nada no código ou no GitHub.
 
+## Atualizar os dados do LEXOR
+
+[#atualizar-os-dados-do-lexor](#atualizar-os-dados-do-lexor)
+
+As propostas ficam embutidas no código (arquivo `src/data/lexor.js`), gerado a
+partir da planilha. Para carregar uma nova safra:
+
+1. Substitua o `Controle_LEXOR.xlsx` na raiz do repositório.
+2. Rode `python3 gerar_lexor.py` (requer `pip install openpyxl`).
+3. Faça `git push` — o site republica sozinho.
+
+O script imprime um resumo de consistência (propostas sem ação cadastrada, UO
+divergente, sem valor, sem autor) que serve de checagem antes da exportação.
+
 ## Atualizações futuras
 
 Qualquer alteração no código (`git push` na branch `main`) republica o site
@@ -156,12 +176,17 @@ src/
     Dashboard.jsx           # painel com gráficos
     NovoRegistro.jsx        # formulário de lançamento
     Historico.jsx           # tabela filtrável com todos os registros
+    Lexor.jsx               # aba LEXOR: lista de propostas e geração em lote
+    Espelho.jsx             # desenho de uma folha de espelho de emenda
     UI.jsx                  # componentes visuais reutilizáveis
   data/
     historico.js            # os 1.471 registros da planilha (somente leitura)
     partidos.js              # tabela de partidos e espectro ideológico
+    lexor.js                 # propostas e tabela de ações (gerado por gerar_lexor.py)
   lib/supabaseClient.js     # conexão com o Supabase
   constants.js / helpers.js
+  lexorUtils.js             # monta o espelho a partir da proposta
+gerar_lexor.py              # converte Controle_LEXOR.xlsx em src/data/lexor.js
 supabase_setup.sql          # script para criar a tabela e as permissões
 .github/workflows/deploy.yml # publica automaticamente no GitHub Pages
 ```

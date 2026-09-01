@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { Plus, LayoutDashboard, History, Check, X, LogOut, Settings } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
+import { Plus, LayoutDashboard, History, Check, X, LogOut, Settings, Gauge, FileText } from "lucide-react";
 import { supabase } from "./lib/supabaseClient.js";
 import { HISTORICO_DATA } from "./data/historico.js";
 import { usePartidos } from "./components/usePartidos.js";
@@ -11,6 +11,8 @@ import Dashboard from "./components/Dashboard.jsx";
 import NovoRegistro from "./components/NovoRegistro.jsx";
 import Historico from "./components/Historico.jsx";
 import Configuracoes from "./components/Configuracoes.jsx";
+// A aba LEXOR carrega ~1.200 propostas; só é baixada quando o usuário a abre.
+const Lexor = lazy(() => import("./components/Lexor.jsx"));
 
 // Converte uma linha da tabela "registros" (Supabase) para o formato interno
 // enxuto usado pelos componentes (mesmas chaves do histórico da planilha).
@@ -25,6 +27,13 @@ function mapDbRow(row) {
   };
 }
 
+// Abas principais do aplicativo
+const ABAS = [
+  { id: "metricas", label: "MÉTRICAS", icon: Gauge },
+  { id: "lexor", label: "LEXOR", icon: FileText },
+];
+
+// Seções internas da aba MÉTRICAS
 const NAV = [
   { id: "dashboard", label: "Painel", icon: LayoutDashboard },
   { id: "novo", label: "Lançar", icon: Plus },
@@ -34,6 +43,8 @@ const NAV = [
 
 export default function App() {
   const [session, setSession] = useState(undefined); // undefined = carregando, null = deslogado
+  const [aba, setAba] = useState("metricas");
+  const headerRef = useRef(null);
   const [view, setView] = useState("dashboard");
   const [novos, setNovos] = useState([]);
   const [loadedNovos, setLoadedNovos] = useState(false);
@@ -45,6 +56,18 @@ export default function App() {
 
   const emailAtual = session?.user?.email || null;
   const autorAtual = nomePorEmail(usuarios, emailAtual);
+
+  // Mede a altura real do cabeçalho fixo e publica em --topbar-h, para que a
+  // barra de seções e o conteúdo fiquem alinhados em qualquer tela.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const aplicar = () => document.documentElement.style.setProperty("--topbar-h", `${el.offsetHeight}px`);
+    aplicar();
+    const ro = new ResizeObserver(aplicar);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [session]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session ?? null));
@@ -102,30 +125,44 @@ export default function App() {
     <div className="app-shell">
       <div className="app-bg" style={{ backgroundImage: `url(${bgImage})` }} />
 
-      <header className="topbar">
+      <header className="topbar" ref={headerRef}>
         <div className="brand">
           <img src={brasao} className="brand-brasao" alt="Brasão da Assessoria Parlamentar do Gabinete do Comandante do Exército" />
           <div className="brand-text">
-            <span className="brand-title">MÉTRICAS DE GESTÃO</span>
+            <span className="brand-title">GESTÃO</span>
             <span className="brand-sub">A4.6 - Subassessoria de Orçamento</span>
           </div>
         </div>
         <div className="topbar-right">
-          <nav className="topnav">
-            {NAV.map(n => (
-              <button key={n.id} className={`topnav-btn ${view === n.id ? "topnav-btn-active" : ""}`} onClick={() => setView(n.id)}>
-                <n.icon size={15} strokeWidth={1.75} /> {n.label}
+          <nav className="abas" aria-label="Abas principais">
+            {ABAS.map(a => (
+              <button key={a.id} className={`aba-btn ${aba === a.id ? "aba-btn-active" : ""}`} onClick={() => setAba(a.id)}>
+                <a.icon size={15} strokeWidth={1.75} /> {a.label}
               </button>
             ))}
           </nav>
           <button className="logout-btn" onClick={() => supabase.auth.signOut()} title="Sair">
-            <LogOut size={14} /> Sair
+            <LogOut size={14} /> <span className="logout-txt">Sair</span>
           </button>
         </div>
       </header>
 
-      <main className="main">
-        {!loadedNovos || !partidosCarregados || !usuariosCarregados ? (
+      {aba === "metricas" && (
+        <nav className="subnav" aria-label="Seções de Métricas">
+          {NAV.map(n => (
+            <button key={n.id} className={`subnav-btn ${view === n.id ? "subnav-btn-active" : ""}`} onClick={() => setView(n.id)}>
+              <n.icon size={15} strokeWidth={1.75} /> {n.id === "novo" ? "+ Lançar" : n.label}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      <main className={`main ${aba === "metricas" ? "main-com-subnav" : ""}`}>
+        {aba === "lexor" ? (
+          <Suspense fallback={<div className="loading-state">Carregando propostas…</div>}>
+            <Lexor />
+          </Suspense>
+        ) : !loadedNovos || !partidosCarregados || !usuariosCarregados ? (
           <div className="loading-state">Carregando…</div>
         ) : view === "dashboard" ? (
           <Dashboard allRecords={allRecords} novos={novos} />
@@ -138,14 +175,16 @@ export default function App() {
         )}
       </main>
 
-      <nav className="bottomnav">
-        {NAV.map(n => (
-          <button key={n.id} className={`bottomnav-btn ${view === n.id ? "bottomnav-btn-active" : ""}`} onClick={() => setView(n.id)}>
-            <n.icon size={19} strokeWidth={1.75} />
-            <span>{n.label}</span>
-          </button>
-        ))}
-      </nav>
+      {aba === "metricas" && (
+        <nav className="bottomnav">
+          {NAV.map(n => (
+            <button key={n.id} className={`bottomnav-btn ${view === n.id ? "bottomnav-btn-active" : ""}`} onClick={() => setView(n.id)}>
+              <n.icon size={19} strokeWidth={1.75} />
+              <span>{n.label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
 
       {toast && (
         <div className={`toast toast-${toast.tipo}`}>
