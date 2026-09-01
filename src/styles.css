@@ -48,7 +48,12 @@ body { margin: 0; }
   inset: 0;
   background: linear-gradient(180deg, rgba(10,16,13,0.72) 0%, rgba(10,16,13,0.82) 45%, rgba(10,16,13,0.9) 100%);
 }
-.app-shell > *:not(.app-bg) { position: relative; z-index: 1; }
+/* O conteúdo fica acima do plano de fundo. As barras fixas (cabeçalho, seções,
+   navegação inferior e avisos) ficam de fora: elas já têm o próprio
+   position/z-index e não podem ser sobrescritas por esta regra. */
+.app-shell > *:not(.app-bg):not(.topbar):not(.subnav):not(.bottomnav):not(.toast) {
+  position: relative; z-index: 1;
+}
 
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
@@ -88,8 +93,12 @@ body { margin: 0; }
 }
 .logout-btn:hover { background: var(--surface-hi); color: var(--ink); }
 
-.main { flex: 1; padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); padding-top: calc(86px + env(safe-area-inset-top, 0px)); }
-@media (min-width: 860px) { .main { padding-bottom: 36px; padding-top: 92px; } }
+.main {
+  flex: 1;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  padding-top: calc(var(--topbar-h, 94px) + var(--subnav-h, 0px) + 8px);
+}
+@media (min-width: 860px) { .main { padding-bottom: 36px; } }
 
 .view-pad { max-width: 1080px; margin: 0 auto; padding: 26px 18px 8px; }
 @media (min-width: 860px) { .view-pad { padding: 34px 28px 8px; } }
@@ -397,7 +406,6 @@ select.input option { background: var(--surface-solid); color: var(--ink); }
 }
 .subnav-btn:hover { background: var(--surface-hi); color: var(--ink); }
 .subnav-btn-active { background: var(--surface-hi); border-color: var(--line-strong); color: var(--ink); }
-@media (min-width: 860px) { .main-com-subnav { padding-top: calc(var(--topbar-h, 94px) + 50px); } }
 
 /* ==========================================================================
    Aba LEXOR — lista de propostas
@@ -504,7 +512,7 @@ select.input option { background: var(--surface-solid); color: var(--ink); }
 @media print {
   .topbar, .subnav, .bottomnav, .toast, .app-bg, .no-print { display: none !important; }
   .app-shell { background: #fff !important; }
-  .main, .main-com-subnav { padding: 0 !important; }
+  .main { padding: 0 !important; }
   .view-pad { padding: 0 !important; max-width: none !important; }
   .espelho-area { gap: 0; display: block; }
   .espelho-folha {

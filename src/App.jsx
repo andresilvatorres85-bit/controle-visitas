@@ -45,6 +45,7 @@ export default function App() {
   const [session, setSession] = useState(undefined); // undefined = carregando, null = deslogado
   const [aba, setAba] = useState("metricas");
   const headerRef = useRef(null);
+  const subnavRef = useRef(null);
   const [view, setView] = useState("dashboard");
   const [novos, setNovos] = useState([]);
   const [loadedNovos, setLoadedNovos] = useState(false);
@@ -57,17 +58,26 @@ export default function App() {
   const emailAtual = session?.user?.email || null;
   const autorAtual = nomePorEmail(usuarios, emailAtual);
 
-  // Mede a altura real do cabeçalho fixo e publica em --topbar-h, para que a
-  // barra de seções e o conteúdo fiquem alinhados em qualquer tela.
+  // Mede a altura real das barras fixas e publica em --topbar-h / --subnav-h,
+  // para que o conteúdo comece exatamente abaixo delas em qualquer tela.
+  // A subnav some no celular (display:none), e aí sua altura medida é 0 — o
+  // cálculo do padding se ajusta sozinho, sem media query.
   useEffect(() => {
-    const el = headerRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const aplicar = () => document.documentElement.style.setProperty("--topbar-h", `${el.offsetHeight}px`);
+    const raiz = document.documentElement;
+    const aplicar = () => {
+      raiz.style.setProperty("--topbar-h", `${headerRef.current?.offsetHeight || 94}px`);
+      raiz.style.setProperty("--subnav-h", `${subnavRef.current?.offsetHeight || 0}px`);
+    };
     aplicar();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", aplicar);
+      return () => window.removeEventListener("resize", aplicar);
+    }
     const ro = new ResizeObserver(aplicar);
-    ro.observe(el);
+    if (headerRef.current) ro.observe(headerRef.current);
+    if (subnavRef.current) ro.observe(subnavRef.current);
     return () => ro.disconnect();
-  }, [session]);
+  }, [session, aba]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session ?? null));
@@ -148,7 +158,7 @@ export default function App() {
       </header>
 
       {aba === "metricas" && (
-        <nav className="subnav" aria-label="Seções de Métricas">
+        <nav className="subnav" ref={subnavRef} aria-label="Seções de Métricas">
           {NAV.map(n => (
             <button key={n.id} className={`subnav-btn ${view === n.id ? "subnav-btn-active" : ""}`} onClick={() => setView(n.id)}>
               <n.icon size={15} strokeWidth={1.75} /> {n.id === "novo" ? "+ Lançar" : n.label}
@@ -157,7 +167,7 @@ export default function App() {
         </nav>
       )}
 
-      <main className={`main ${aba === "metricas" ? "main-com-subnav" : ""}`}>
+      <main className="main">
         {aba === "lexor" ? (
           <Suspense fallback={<div className="loading-state">Carregando propostas…</div>}>
             <Lexor />
