@@ -451,6 +451,7 @@ select.input option { background: var(--surface-solid); color: var(--ink); }
 .status-aguardando { color: var(--muted); }
 .status-confeccionado { color: var(--gold); border-color: rgba(201,169,106,0.45); }
 .status-exportado { color: var(--brand-hi); border-color: rgba(78,154,107,0.5); }
+.status-desconsiderar { color: #E88C84; border-color: rgba(214,104,95,0.45); text-decoration: line-through; }
 .salvando { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; }
 
 .lexor-aviso-erro {

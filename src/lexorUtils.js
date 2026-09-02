@@ -240,5 +240,8 @@ export function situacaoDe(p) {
 }
 
 // Status de tramitação no LEXOR, editado à mão na tabela geral.
-export const STATUS_LEXOR = ["Aguardando", "Confeccionado", "Exportado"];
+// "Desconsiderar" marca a proposta que não deve ser lançada no LEXOR; ela sai
+// da tabela principal e passa para o card das desconsideradas.
+export const STATUS_DESCONSIDERAR = "Desconsiderar";
+export const STATUS_LEXOR = ["Aguardando", "Confeccionado", "Exportado", STATUS_DESCONSIDERAR];
 export const STATUS_LEXOR_PADRAO = "Aguardando";

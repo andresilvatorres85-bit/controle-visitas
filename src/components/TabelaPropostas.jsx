@@ -39,8 +39,8 @@ export default function TabelaPropostas({
             </th>
             <th className="col-acao">Espelho</th>
             <th>Nº</th>
-            <th>{consolidadora ? "Beneficiários" : "Beneficiário"}</th>
-            <th>{consolidadora ? "Municípios / UF" : "Município / UF"}</th>
+            <th>Beneficiário</th>
+            <th>Município / UF</th>
             <th>Ação</th>
             <th className="esp-right">Valor</th>
             <th>Autor</th>
@@ -69,7 +69,7 @@ export default function TabelaPropostas({
                 </td>
                 <td className="mono">
                   {p.nr}
-                  {consolidadora && (
+                  {p.consolidada && (
                     <span className="cel-origem">{p.itens.length} propostas</span>
                   )}
                 </td>
@@ -77,14 +77,14 @@ export default function TabelaPropostas({
                   {p.beneficiario || <span className="muted">sem beneficiário</span>}
                 </td>
                 <td className="cel-local">
-                  {consolidadora
+                  {p.consolidada
                     ? (p.cidade || "—")
                     : <>{p.cidade || "—"} <span className="mono">{p.uf || ""}</span></>}
                 </td>
                 <td className="mono">{p.acao || "—"}</td>
                 <td className="mono esp-right">{moeda(valorTotal(p))}</td>
                 <td>
-                  {consolidadora
+                  {p.consolidada
                     ? (
                       <input className="input input-autor" value={p.parlamentar || ""}
                         placeholder="a definir"
@@ -109,10 +109,12 @@ export default function TabelaPropostas({
                 </td>
                 {consolidadora && (
                   <td className="col-acao">
-                    <button className="icon-btn del" title="Excluir esta proposta consolidadora"
-                      onClick={() => aoExcluir(p.nr)}>
-                      <Trash2 size={15} />
-                    </button>
+                    {p.consolidada && (
+                      <button className="icon-btn del" title="Excluir esta proposta consolidadora"
+                        onClick={() => aoExcluir(p.nr)}>
+                        <Trash2 size={15} />
+                      </button>
+                    )}
                   </td>
                 )}
               </tr>

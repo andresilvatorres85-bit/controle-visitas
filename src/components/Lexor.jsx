@@ -9,7 +9,8 @@ import TabelaPropostas from "./TabelaPropostas.jsx";
 import { supabase } from "../lib/supabaseClient.js";
 import { PROPOSTAS_LEXOR, ACOES_LEXOR } from "../data/lexor.js";
 import {
-  moeda, valorTotal, exercicioDe, situacaoDe, SITUACOES, STATUS_LEXOR_PADRAO,
+  moeda, valorTotal, exercicioDe, situacaoDe, SITUACOES,
+  STATUS_LEXOR_PADRAO, STATUS_DESCONSIDERAR,
 } from "../lexorUtils.js";
 import {
   podeJuntar, proximoNumero, montarConsolidada, autorSugerido,
@@ -29,6 +30,7 @@ export default function Lexor() {
   const [salvando, setSalvando] = useState(null);
   const [erroStatus, setErroStatus] = useState(false);
   const [pagina, setPagina] = useState(1);
+  const [paginaDesc, setPaginaDesc] = useState(1);
   const [selecionadas, setSelecionadas] = useState(() => new Set());
   const [espelhosDe, setEspelhosDe] = useState(null); // array de propostas em exibição
   const [consolidadas, setConsolidadas] = useState([]);  // registros do Supabase
@@ -80,6 +82,11 @@ export default function Lexor() {
     }
   }, [statusLexor]);
 
+  // Uma proposta marcada como "Desconsiderar" sai da tabela principal e passa
+  // para o card das desconsideradas, no fim da página.
+  const desconsiderada = useCallback(
+    nr => statusLexor[nr] === STATUS_DESCONSIDERAR, [statusLexor]);
+
   // ---------------------------------------------- propostas consolidadoras
   useEffect(() => {
     let vivo = true;
@@ -96,9 +103,23 @@ export default function Lexor() {
   const indicePropostas = useMemo(
     () => new Map(PROPOSTAS_LEXOR.map(p => [p.nr, p])), []);
 
-  const listaConsolidadas = useMemo(
+  const todasConsolidadas = useMemo(
     () => consolidadas.map(c => montarConsolidada(c, indicePropostas)).filter(Boolean),
     [consolidadas, indicePropostas]);
+
+  const listaConsolidadas = useMemo(
+    () => todasConsolidadas.filter(p => !desconsiderada(p.nr)),
+    [todasConsolidadas, desconsiderada]);
+
+  // Card das desconsideradas: propostas da planilha e consolidadoras juntas,
+  // na ordem em que aparecem na origem.
+  const listaDesconsideradas = useMemo(() => [
+    ...PROPOSTAS_LEXOR.filter(p => desconsiderada(p.nr)),
+    ...todasConsolidadas.filter(p => desconsiderada(p.nr)),
+  ], [todasConsolidadas, desconsiderada]);
+
+  const totalPaginasDesc = Math.max(1, Math.ceil(listaDesconsideradas.length / PAGE_SIZE));
+  const pageDesc = listaDesconsideradas.slice((paginaDesc - 1) * PAGE_SIZE, paginaDesc * PAGE_SIZE);
 
   async function juntarSelecionadas() {
     setErroJuntar("");
@@ -161,6 +182,7 @@ export default function Lexor() {
   const filtradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     return PROPOSTAS_LEXOR.filter(p => {
+      if (desconsiderada(p.nr)) return false;
       if (uf !== "Todas" && p.uf !== uf) return false;
       if (acao !== "Todas" && p.acao !== acao) return false;
       if (cmdo !== "Todos" && p.cmdo !== cmdo) return false;
@@ -170,9 +192,9 @@ export default function Lexor() {
       return [p.nr, p.beneficiario, p.cidade, p.objeto, p.proponente, p.parlamentar, p.acao]
         .some(c => (c || "").toString().toLowerCase().includes(termo));
     });
-  }, [busca, uf, acao, cmdo, tipo, situacao]);
+  }, [busca, uf, acao, cmdo, tipo, situacao, desconsiderada]);
 
-  useEffect(() => { setPagina(1); }, [busca, uf, acao, cmdo, tipo, situacao]);
+  useEffect(() => { setPagina(1); setPaginaDesc(1); }, [busca, uf, acao, cmdo, tipo, situacao]);
 
   const totalPaginas = Math.max(1, Math.ceil(filtradas.length / PAGE_SIZE));
   const pageItems = filtradas.slice((pagina - 1) * PAGE_SIZE, pagina * PAGE_SIZE);
@@ -199,7 +221,8 @@ export default function Lexor() {
   }
 
   function abrirSelecionadas() {
-    const lista = [...filtradas, ...listaConsolidadas].filter(p => selecionadas.has(p.nr));
+    const lista = [...filtradas, ...todasConsolidadas, ...listaDesconsideradas]
+      .filter(p => selecionadas.has(p.nr));
     if (lista.length) setEspelhosDe(lista);
   }
 
@@ -376,6 +399,50 @@ export default function Lexor() {
         aoExcluir={excluirConsolidada}
         vazio="Selecione duas ou mais propostas da mesma ação e use “Juntar propostas”."
       />
+
+      <h2 className="lexor-subtitulo">
+        Propostas desconsideradas
+        <span className="lexor-subtitulo-sub">
+          {listaDesconsideradas.length === 0
+            ? "nenhuma proposta marcada"
+            : `${listaDesconsideradas.length} proposta(s) fora do lançamento no LEXOR`}
+        </span>
+      </h2>
+
+      <TabelaPropostas
+        consolidadora
+        itens={pageDesc}
+        selecionadas={selecionadas}
+        aoAlternar={alternar}
+        aoAlternarTodos={() => {
+          const todos = pageDesc.every(p => selecionadas.has(p.nr));
+          setSelecionadas(prev => {
+            const set = new Set(prev);
+            for (const p of pageDesc) todos ? set.delete(p.nr) : set.add(p.nr);
+            return set;
+          });
+        }}
+        aoAbrirEspelho={p => setEspelhosDe([p])}
+        statusLexor={statusLexor}
+        aoMudarStatus={mudarStatus}
+        salvando={salvando}
+        erroStatus={erroStatus}
+        aoMudarAutor={mudarAutorConsolidada}
+        aoExcluir={excluirConsolidada}
+        vazio="Marque uma proposta como “Desconsiderar” na coluna LEXOR para movê-la para cá."
+      />
+
+      {listaDesconsideradas.length > PAGE_SIZE && (
+        <div className="pagination">
+          <button className="icon-btn" disabled={paginaDesc <= 1}
+            onClick={() => setPaginaDesc(p => p - 1)}><ChevronLeft size={16} /></button>
+          <span className="page-info">
+            Página {paginaDesc} de {totalPaginasDesc} · {listaDesconsideradas.length} desconsideradas
+          </span>
+          <button className="icon-btn" disabled={paginaDesc >= totalPaginasDesc}
+            onClick={() => setPaginaDesc(p => p + 1)}><ChevronRight size={16} /></button>
+        </div>
+      )}
     </div>
   );
 }
