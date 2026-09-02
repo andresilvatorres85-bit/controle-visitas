@@ -55,6 +55,11 @@ export const PROGRAMAS = {
 
 export const GND_NOMES = { 3: "Outras Despesas Correntes", 4: "Investimentos" };
 
+// Ações de emendas de inclusão: não constam do PLOA, então não têm Sequencial
+// SOF atribuído. A ausência desse número nelas é esperada e não conta como
+// pendência. Acrescente aqui outras ações de inclusão que venham a surgir.
+export const ACOES_SEM_SEQUENCIAL = ["2E74", "20XM"];
+
 const CNPJ_COMANDO = "Beneficiário para lançamento no SIOP - CNPJ: 00.394.452/0001-03 - Comando do Exército";
 
 // ---------------------------------------------------------------------------
@@ -209,7 +214,9 @@ export function pendencias(p) {
   const lista = [];
   if (!p.acao) lista.push("sem código de ação");
   else if (!ACOES_LEXOR[p.acao]) lista.push(`ação ${p.acao} não cadastrada na aba Ações`);
-  else if (!ACOES_LEXOR[p.acao].seq) lista.push("ação sem Sequencial SOF");
+  else if (!ACOES_LEXOR[p.acao].seq && !ACOES_SEM_SEQUENCIAL.includes(p.acao)) {
+    lista.push("ação sem Sequencial SOF");
+  }
   if (!valorTotal(p)) lista.push("sem valor em GND 3 e GND 4");
   if (!p.objeto) lista.push("sem objeto");
   if (!p.beneficiario) lista.push("sem beneficiário");
