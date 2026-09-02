@@ -9,7 +9,7 @@ import TabelaPropostas from "./TabelaPropostas.jsx";
 import { supabase } from "../lib/supabaseClient.js";
 import { PROPOSTAS_LEXOR, ACOES_LEXOR } from "../data/lexor.js";
 import {
-  moeda, valorTotal, exercicioDe, situacaoDe, STATUS_LEXOR_PADRAO,
+  moeda, valorTotal, exercicioDe, situacaoDe, SITUACOES, STATUS_LEXOR_PADRAO,
 } from "../lexorUtils.js";
 import {
   podeJuntar, proximoNumero, montarConsolidada, autorSugerido,
