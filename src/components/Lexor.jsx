@@ -260,9 +260,10 @@ export default function Lexor() {
                     ? <CheckSquare size={15} /> : <Square size={15} />}
                 </button>
               </th>
+              <th className="col-acao">Espelho</th>
               <th>Nº</th><th>Beneficiário</th><th>Município / UF</th>
               <th>Ação</th><th className="esp-right">Valor</th><th>Autor</th>
-              <th>Situação</th><th>LEXOR</th><th></th>
+              <th>Situação</th><th>LEXOR</th>
             </tr>
           </thead>
           <tbody>
@@ -275,6 +276,12 @@ export default function Lexor() {
                   <td className="col-check">
                     <button className="icon-btn" onClick={() => alternar(p.nr)}>
                       {selecionadas.has(p.nr) ? <CheckSquare size={15} /> : <Square size={15} />}
+                    </button>
+                  </td>
+                  <td className="col-acao">
+                    <button className="icon-btn edit" title="Ver espelho de emenda"
+                      onClick={() => setEspelhosDe([p])}>
+                      <FileText size={15} />
                     </button>
                   </td>
                   <td className="mono">{p.nr}</td>
@@ -295,11 +302,6 @@ export default function Lexor() {
                       {STATUS_LEXOR.map(v => <option key={v} value={v}>{v}</option>)}
                     </select>
                     {salvando === p.nr && <span className="salvando">salvando…</span>}
-                  </td>
-                  <td>
-                    <button className="icon-btn edit" title="Ver espelho" onClick={() => setEspelhosDe([p])}>
-                      <FileText size={15} />
-                    </button>
                   </td>
                 </tr>
               );

@@ -451,6 +451,15 @@ select.input option { background: var(--surface-solid); color: var(--ink); }
 .tbl-lexor .cel-benef { max-width: 260px; }
 .tbl-lexor .row-sel td { background: rgba(78,154,107,0.10); }
 
+/* A coluna do espelho fica no início da linha. Ela já esteve no fim, mas a
+   tabela rola na horizontal e o botão saía da área visível assim que a coluna
+   LEXOR entrou; aqui ele aparece sem precisar rolar nada. */
+.tbl-lexor .col-acao {
+  width: 62px; text-align: center; padding-left: 4px; padding-right: 8px;
+}
+.tbl-lexor .col-acao .icon-btn { color: var(--brand-hi); }
+.tbl-lexor .col-acao .icon-btn:hover { background: rgba(78,154,107,0.18); color: #fff; }
+
 /* ==========================================================================
    Espelho de emenda — layout do "Relatório de espelho de Emendas" do Lexor
    ========================================================================== */
