@@ -99,7 +99,8 @@ def partes_fp(fp):
     p = [x.strip() for x in limpa(fp).split(".")]
     if len(p) < 7:
         return {}
-    return {"iu": p[0], "uo": p[1], "funcao": p[2], "subfuncao": p[3],
+    # p[0] é a esfera orçamentária (10 = Fiscal, 20 = Seguridade Social)
+    return {"esfera": p[0], "uo": p[1], "funcao": p[2], "subfuncao": p[3],
             "programa": p[4], "acao": p[5].upper(), "subtitulo": p[6]}
 
 
@@ -208,6 +209,7 @@ def main():
             "programa": pad(ws.cell(r, 11).value, 4, fp.get("programa")),
             "acao": acao,
             "uo": uo_cod,
+            "esfera": fp.get("esfera", ""),
             "subtitulo": fp.get("subtitulo") or "XXXX",
             "gnd3": gnd3,
             "gnd4": gnd4,

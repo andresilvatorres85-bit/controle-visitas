@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import {
   Search, ChevronLeft, ChevronRight, FileText, Printer, ArrowLeft,
-  AlertTriangle, Square, CheckSquare, Landmark, Wallet, ClipboardList,
+  AlertTriangle, Square, CheckSquare, Wallet, ClipboardList, FileDown,
 } from "lucide-react";
 import { StatCard, Badge } from "./UI.jsx";
 import Espelho from "./Espelho.jsx";
 import { PROPOSTAS_LEXOR, ACOES_LEXOR } from "../data/lexor.js";
 import { moeda, valorTotal, pendencias, exercicioDe } from "../lexorUtils.js";
+import { exportarWord } from "../lexorExport.js";
 
 const PAGE_SIZE = 30;
 
@@ -90,6 +91,9 @@ export default function Lexor() {
 
   // ---------------------------------------------------------------- espelhos
   if (espelhosDe) {
+    const nomeArquivo = espelhosDe.length === 1
+      ? `espelho-${espelhosDe[0].nr}`
+      : `espelhos-lexor-${exercicio}`;
     return (
       <div className="view-pad lexor-espelhos">
         <div className="espelho-barra no-print">
@@ -101,9 +105,14 @@ export default function Lexor() {
               ? `Proposta ${espelhosDe[0].nr}`
               : `${espelhosDe.length} espelhos`} · exercício {exercicio}
           </span>
-          <button className="btn btn-primary btn-sm" onClick={() => window.print()}>
-            <Printer size={15} /> Imprimir / Salvar PDF
-          </button>
+          <div className="espelho-barra-acoes">
+            <button className="btn btn-ghost btn-sm" onClick={() => exportarWord(nomeArquivo)}>
+              <FileDown size={15} /> Word
+            </button>
+            <button className="btn btn-primary btn-sm" onClick={() => window.print()}>
+              <Printer size={15} /> PDF
+            </button>
+          </div>
         </div>
 
         <div className="espelho-area">
@@ -139,23 +148,23 @@ export default function Lexor() {
           <input className="input search-input" placeholder="Buscar por OM, cidade, objeto, autor ou nº…"
             value={busca} onChange={e => setBusca(e.target.value)} />
         </div>
+        <select className="input" value={tipo} onChange={e => setTipo(e.target.value)}>
+          <option value="Todos">Tipo de Emenda — todos</option>
+          {opcoes.tipos.map(v => <option key={v}>{v}</option>)}
+        </select>
         <select className="input" value={uf} onChange={e => setUf(e.target.value)}>
-          <option>Todas</option>
+          <option value="Todas">Estados — todos</option>
           {opcoes.ufs.map(v => <option key={v}>{v}</option>)}
         </select>
         <select className="input" value={acao} onChange={e => setAcao(e.target.value)}>
-          <option>Todas</option>
+          <option value="Todas">Ação Orçamentária — todas</option>
           {opcoes.acoes.map(v => (
             <option key={v} value={v}>{v}{ACOES_LEXOR[v] ? "" : " (sem cadastro)"}</option>
           ))}
         </select>
         <select className="input" value={cmdo} onChange={e => setCmdo(e.target.value)}>
-          <option>Todos</option>
+          <option value="Todos">C Mil A — todos</option>
           {opcoes.cmdos.map(v => <option key={v}>{v}</option>)}
-        </select>
-        <select className="input" value={tipo} onChange={e => setTipo(e.target.value)}>
-          <option>Todos</option>
-          {opcoes.tipos.map(v => <option key={v}>{v}</option>)}
         </select>
       </div>
 

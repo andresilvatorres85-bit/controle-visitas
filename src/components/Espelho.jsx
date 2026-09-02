@@ -1,13 +1,54 @@
-import { montarEspelho, moeda, pendencias } from "../lexorUtils.js";
+import { useState } from "react";
+import { Copy, Check } from "lucide-react";
+import { montarEspelho, moeda, pendencias, CABECALHO } from "../lexorUtils.js";
 
-// Desenha uma folha de espelho de emenda no mesmo formato do documento
-// produzido pela mala direta do Word. Fundo branco e tipografia própria,
-// independentes do tema escuro do restante do aplicativo.
+// Desenha uma folha de espelho de emenda no layout do "Relatório de espelho de
+// Emendas" do Lexor. Fundo branco e tipografia próprios, independentes do tema
+// escuro do restante do aplicativo.
+//
+// Campos marcados com <Campo copiar={...}> ganham um botão de cópia que não
+// aparece na impressão nem na exportação para Word.
 
-function Caixa({ children, largura, className = "" }) {
+function BotaoCopiar({ texto, titulo }) {
+  const [copiado, setCopiado] = useState(false);
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(texto);
+    } catch {
+      // navegadores sem permissão de área de transferência: seleção manual
+      const ta = document.createElement("textarea");
+      ta.value = texto;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch { /* ignora */ }
+      document.body.removeChild(ta);
+    }
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 1600);
+  }
+
   return (
-    <div className={`esp-box ${className}`} style={largura ? { width: largura } : undefined}>
-      {children || "\u00A0"}
+    <button type="button" className={`lx-copiar no-print ${copiado ? "lx-copiado" : ""}`}
+      onClick={copiar} title={copiado ? "Copiado" : `Copiar ${titulo}`}>
+      {copiado ? <Check size={12} /> : <Copy size={12} />}
+    </button>
+  );
+}
+
+// Rótulo em caixa alta + caixa cinza com o valor, como no relatório oficial.
+function Campo({ rotulo, valor, copiar, largura, negrito, className = "" }) {
+  return (
+    <div className={`lx-campo ${className}`} style={largura ? { width: largura } : undefined}>
+      {rotulo && (
+        <div className="lx-rot">
+          {rotulo}
+          {copiar && <BotaoCopiar texto={copiar} titulo={rotulo.toLowerCase()} />}
+        </div>
+      )}
+      <div className={`lx-valor ${negrito ? "lx-negrito" : ""}`}>{valor || "\u00A0"}</div>
     </div>
   );
 }
@@ -15,153 +56,150 @@ function Caixa({ children, largura, className = "" }) {
 export default function Espelho({ proposta, exercicio }) {
   const e = montarEspelho(proposta, exercicio);
   const problemas = pendencias(proposta);
+  const emissao = new Date().toLocaleString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
 
   return (
-    <div className="espelho-folha">
-      <h1 className="esp-titulo">EXÉRCITO BRASILEIRO</h1>
-      <h2 className="esp-subtitulo">PROPOSTA DE EMENDA À DESPESA</h2>
-      <div className="esp-exercicio">
-        <span>( Projeto de Lei Orçamentária da União para o exercício de</span>
-        <Caixa largura={64} className="esp-center">{e.exercicio}</Caixa>
-        <span>)</span>
+    <div className="espelho-folha lx">
+      {/* ---------------------------------------------------------- cabeçalho */}
+      <div className="lx-topo">
+        <div className="lx-topo-txt">
+          <div>{CABECALHO.orgao}</div>
+          <div>{CABECALHO.comissao}</div>
+          <div>{CABECALHO.sistema}</div>
+          <div>{CABECALHO.projeto}</div>
+        </div>
+        <div className="lx-aviso">{CABECALHO.aviso}</div>
+      </div>
+      <h1 className="lx-titulo">{CABECALHO.titulo}</h1>
+      <div className="lx-regua" />
+
+      {/* -------------------------------------------------------------- ementa */}
+      <Campo rotulo="EMENTA" valor={e.ementa} copiar={e.ementa} className="lx-w100" />
+
+      <div className="lx-row">
+        <Campo rotulo="SEQUENCIAL SOF" valor={e.sequencial} copiar={e.sequencial} largura="30%" />
+        <Campo rotulo="ESFERA ORÇAMENTÁRIA" valor={e.esfera} className="lx-flex" />
       </div>
 
-      <div className="esp-ementa-row">
-        <div className="esp-ementa-rot">Ementa:</div>
-        <div className="esp-ementa-txt">{e.ementa}</div>
+      {/* ------------------------------------------- acréscimos à programação */}
+      <h2 className="lx-secao">ACRÉSCIMOS À PROGRAMAÇÃO</h2>
+
+      <div className="lx-row">
+        <Campo rotulo="ÓRGÃO ORÇAMENTÁRIO" valor={e.orgao} largura="50%" />
+        <Campo rotulo="UNIDADE ORÇAMENTÁRIA" valor={e.unidade} className="lx-flex" />
       </div>
 
-      <div className="esp-esfera-row">
-        <div className="esp-seq">
-          <div className="esp-rot-forte">Sequencial SOF</div>
-          <Caixa largura={150} className="esp-center">{e.sequencial}</Caixa>
-        </div>
-        <div className="esp-rot-forte esp-esfera-rot">Esfera Orçamentária</div>
-        <div className="esp-esfera-lista">
-          <div className="esp-esfera-item"><Caixa largura={20} className="esp-center">X</Caixa><span>Fiscal</span></div>
-          <div className="esp-esfera-item"><Caixa largura={20} /><span>Seguridade Social</span></div>
-          <div className="esp-esfera-item"><Caixa largura={20} /><span>Investimento das Estatais</span></div>
-        </div>
+      <div className="lx-fp">
+        <span className="lx-fp-rot">FUNCIONAL PROGRAMÁTICA</span>
+        <div className="lx-valor lx-negrito lx-fp-valor">{e.funcional}</div>
       </div>
 
-      <div className="esp-bloco">
-        <div className="esp-rot-forte">Órgão</div>
-        <div className="esp-mini-rots"><span style={{ width: 76 }}>Código</span><span>Descrição</span></div>
-        <div className="esp-linha">
-          <Caixa largura={76} className="esp-center">{e.orgaoCod}</Caixa>
-          <Caixa className="esp-flex">{e.orgaoNome}</Caixa>
+      <div className="lx-recuo">
+        <div className="lx-row">
+          <Campo rotulo="FUNÇÃO" valor={e.funcao} largura="50%" />
+          <Campo rotulo="SUBFUNÇÃO" valor={e.subfuncao} className="lx-flex" />
         </div>
+        <Campo rotulo="PROGRAMA" valor={e.programa} className="lx-w100" />
+        <Campo rotulo="AÇÃO" valor={e.acaoTexto} className="lx-w100" />
+        <Campo rotulo="SUBTÍTULO" valor={e.subtitulo} className="lx-w100" />
+        <Campo rotulo="DESCRIÇÃO DO SUBTÍTULO" valor={e.descricaoSubtitulo} className="lx-w100" />
       </div>
 
-      <div className="esp-bloco">
-        <div className="esp-rot-forte">Unidade Orçamentária</div>
-        <div className="esp-mini-rots"><span style={{ width: 76 }}>Código</span><span>Descrição</span></div>
-        <div className="esp-linha">
-          <Caixa largura={76} className="esp-center">{e.uoCod}</Caixa>
-          <Caixa className="esp-flex">{e.uoNome}</Caixa>
-        </div>
+      <div className="lx-row lx-produto">
+        <Campo rotulo="ESPECIFICAÇÃO DO PRODUTO / UNIDADE DE MEDIDA" valor={e.produto} className="lx-flex" />
+        <Campo rotulo="META" valor={e.meta} largura="120px" />
       </div>
 
-      <div className="esp-func-row">
-        <div>
-          <div className="esp-rot-forte">Funcional / Programática</div>
-          <div className="esp-mini-rots esp-func-rots">
-            <span>Função</span><span>Subfunção</span><span>Programa</span><span>Ação</span><span>Subtítulo</span>
-          </div>
-          <div className="esp-linha">
-            <Caixa largura={54} className="esp-center">{e.funcao}</Caixa>
-            <Caixa largura={62} className="esp-center">{e.subfuncao}</Caixa>
-            <Caixa largura={62} className="esp-center">{e.programa}</Caixa>
-            <Caixa largura={58} className="esp-center">{e.acaoCod}</Caixa>
-            <Caixa largura={62} className="esp-center">{e.subtitulo}</Caixa>
-          </div>
-        </div>
-        <div className="esp-aviso">
-          Este espelho de emenda estará disponível no Sistema Lexor, para importação,
-          conforme cronograma do PLOA {e.exercicio}
-        </div>
+      {/* ------------------------------------------------------ tabela de GND */}
+      <div className="lx-moeda-rot">em R$ 1,00</div>
+      <table className="lx-tabela">
+        <thead>
+          <tr>
+            <th className="lx-th-gnd" colSpan={2}>GND</th>
+            <th colSpan={2}>MODALIDADE DE APLICAÇÃO</th>
+            <th className="lx-th-rp">RP</th>
+            <th className="lx-th-val">
+              ACRÉSCIMO
+              <BotaoCopiar texto={e.linhas.map(l => l.valor).join("\t")} titulo="os acréscimos" />
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {e.linhas.map(l => (
+            <tr key={l.gnd}>
+              <td className="lx-cod">{l.gnd}</td>
+              <td>{l.gndNome}</td>
+              <td className="lx-cod">90</td>
+              <td>Aplicações Diretas</td>
+              <td className="lx-cod">{e.rp}</td>
+              <td className="lx-num">
+                {moeda(l.valor)}
+                <BotaoCopiar texto={String(l.valor)} titulo={`o valor do GND ${l.gnd}`} />
+              </td>
+            </tr>
+          ))}
+          {e.linhas.length === 0 && (
+            <tr><td colSpan={6} className="lx-vazio">sem valores lançados na planilha</td></tr>
+          )}
+        </tbody>
+      </table>
+      <div className="lx-total"><span>TOTAL:</span><div className="lx-valor lx-negrito lx-num">{moeda(e.total)}</div></div>
+
+      {/* -------------------------------------------- cancelamentos compensat. */}
+      <h2 className="lx-secao">CANCELAMENTOS COMPENSATÓRIOS</h2>
+      <div className="lx-moeda-rot">em R$ 1,00</div>
+      <table className="lx-tabela">
+        <thead>
+          <tr>
+            <th className="lx-th-seq">
+              SEQUENCIAL
+              <BotaoCopiar texto={e.cancelamento.sequencial} titulo="o sequencial do cancelamento" />
+            </th>
+            <th className="lx-th-fonte">FONTE</th>
+            <th className="lx-th-gnd" colSpan={2}>GND</th>
+            <th colSpan={2}>MODALIDADE DE APLICAÇÃO</th>
+            <th className="lx-th-id">ID</th>
+            <th className="lx-th-rp">RP</th>
+            <th className="lx-th-val">CANCELAMENTO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="lx-cod">{e.cancelamento.sequencial}</td>
+            <td className="lx-cod">{e.cancelamento.fonte}</td>
+            <td className="lx-cod">{e.cancelamento.gnd}</td>
+            <td>{e.cancelamento.gndNome}</td>
+            <td className="lx-cod">{e.cancelamento.modalidade}</td>
+            <td>{e.cancelamento.modalidadeNome}</td>
+            <td className="lx-cod">{e.cancelamento.id}</td>
+            <td className="lx-cod">{e.cancelamento.rp}</td>
+            <td className="lx-num">
+              {moeda(e.cancelamento.valor)}
+              <BotaoCopiar texto={String(e.cancelamento.valor)} titulo="o valor do cancelamento" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div className="lx-total"><span>TOTAL:</span><div className="lx-valor lx-negrito lx-num">{moeda(e.total)}</div></div>
+
+      {/* ------------------------------------------------------- justificativa */}
+      <h2 className="lx-secao">
+        JUSTIFICATIVA
+        <BotaoCopiar texto={e.justificativa} titulo="a justificativa" />
+      </h2>
+      <div className="lx-valor lx-just">{e.justificativa}</div>
+
+      <div className="lx-row lx-autor-row">
+        <Campo rotulo="AUTOR" valor={e.autor || "a definir"} copiar={e.autor} className="lx-flex" />
       </div>
 
-      <div className="esp-bloco">
-        <div className="esp-rot-forte">Descrição da Ação</div>
-        <Caixa className="esp-full">{e.descricaoAcao}</Caixa>
-      </div>
-
-      <div className="esp-bloco">
-        <div className="esp-rot-forte">Descrição do Subtítulo</div>
-        <Caixa className="esp-full">{e.descricaoSubtitulo}</Caixa>
-      </div>
-
-      <div className="esp-produto-row">
-        <div className="esp-produto-col esp-flex">
-          <div className="esp-rot-forte">Produto</div>
-          <Caixa className="esp-full">{e.produto}</Caixa>
-        </div>
-        <div className="esp-produto-col" style={{ width: 210 }}>
-          <div className="esp-rot-forte">Unidade de Medida</div>
-          <Caixa className="esp-full">{e.unidade}</Caixa>
-        </div>
-        <div className="esp-produto-col" style={{ width: 92 }}>
-          <div className="esp-rot-forte">Meta</div>
-          <Caixa className="esp-full esp-right">{e.meta}</Caixa>
-        </div>
-      </div>
-
-      <div className="esp-bloco">
-        <div className="esp-rot-forte">Acréscimos à Programação (R$ 1,00)</div>
-        <div className="esp-mini-rots esp-acr-rots">
-          <span className="esp-acr-gnd">Grupo de Natureza de Despesa – GND</span>
-          <span className="esp-acr-mod">Modalidade de Aplicação</span>
-          <span className="esp-acr-rp">RP</span>
-          <span className="esp-acr-val">Acréscimo</span>
-        </div>
-        {e.linhas.map(l => (
-          <div className="esp-linha" key={l.gnd}>
-            <Caixa largura={36} className="esp-center">{l.gnd}</Caixa>
-            <Caixa largura={244}>{l.gndNome}</Caixa>
-            <Caixa largura={42} className="esp-center">90</Caixa>
-            <Caixa largura={180}>Aplicação direta</Caixa>
-            <Caixa largura={32} className="esp-center">{e.rp}</Caixa>
-            <Caixa largura={92} className="esp-right">{moeda(l.valor)}</Caixa>
-          </div>
-        ))}
-        {e.linhas.length === 0 && (
-          <div className="esp-linha"><Caixa className="esp-full esp-vazio">sem valores lançados na planilha</Caixa></div>
-        )}
-      </div>
-
-      <div className="esp-bloco">
-        <div className="esp-rot-forte">Cancelamentos Compensatórios (R$ 1,00)</div>
-        <div className="esp-mini-rots esp-canc-rots">
-          <span style={{ width: 66 }}>Sequencial</span>
-          <span style={{ width: 50 }}>Fonte</span>
-          <span style={{ width: 190 }}>Grupo Nat. Despesa - GND</span>
-          <span style={{ width: 180 }}>Modalidade de Aplicação</span>
-          <span style={{ width: 32 }}>IU</span>
-          <span style={{ width: 32 }}>RP</span>
-          <span style={{ width: 92 }}>Cancelamento</span>
-        </div>
-        {[0, 1, 2].map(i => (
-          <div className="esp-linha" key={i}>
-            <Caixa largura={66} /><Caixa largura={50} /><Caixa largura={190} />
-            <Caixa largura={180} /><Caixa largura={32} /><Caixa largura={32} /><Caixa largura={92} />
-          </div>
-        ))}
-      </div>
-
-      <div className="esp-bloco">
-        <div className="esp-rot-forte">Justificativa</div>
-        <div className="esp-just">
-          <p>{e.cnpj}</p>
-          <p className="esp-just-txt">{e.justificativa}</p>
-        </div>
-      </div>
-
-      <div className="esp-autor">
-        <span className="esp-autor-rot">Autor:</span>
-        {e.autor
-          ? <Caixa>{e.autor}</Caixa>
-          : <Caixa largura={230} className="esp-vazio">a definir</Caixa>}
+      {/* -------------------------------------------------------------- rodapé */}
+      <div className="lx-rodape">
+        <span>Emissão: {emissao}</span>
+        <span className="lx-pagina">Página 1 de 1</span>
       </div>
 
       {problemas.length > 0 && (

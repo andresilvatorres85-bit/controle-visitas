@@ -186,6 +186,7 @@ src/
   lib/supabaseClient.js     # conexão com o Supabase
   constants.js / helpers.js
   lexorUtils.js             # monta o espelho a partir da proposta
+  lexorExport.js            # exportação dos espelhos para o Word
 gerar_lexor.py              # converte Controle_LEXOR.xlsx em src/data/lexor.js
 supabase_setup.sql          # script para criar a tabela e as permissões
 .github/workflows/deploy.yml # publica automaticamente no GitHub Pages
