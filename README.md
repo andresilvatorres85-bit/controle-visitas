@@ -178,6 +178,7 @@ src/
     Historico.jsx           # tabela filtrável com todos os registros
     Lexor.jsx               # aba LEXOR: lista de propostas e geração em lote
     Espelho.jsx             # desenho de uma folha de espelho de emenda
+    TabelaPropostas.jsx     # tabela usada pelos dois cards do módulo LEXOR
     UI.jsx                  # componentes visuais reutilizáveis
   data/
     historico.js            # os 1.471 registros da planilha (somente leitura)
@@ -187,8 +188,10 @@ src/
   constants.js / helpers.js
   lexorUtils.js             # monta o espelho a partir da proposta
   lexorExport.js            # exportação dos espelhos para o Word
+  lexorConsolidar.js        # junta várias propostas numa consolidadora
 gerar_lexor.py              # converte Controle_LEXOR.xlsx em src/data/lexor.js
 supabase_lexor_status.sql   # cria a tabela da coluna LEXOR (rodar uma vez)
+supabase_lexor_consolidadas.sql # cria a tabela das consolidadoras (rodar uma vez)
 supabase_setup.sql          # script para criar a tabela e as permissões
 .github/workflows/deploy.yml # publica automaticamente no GitHub Pages
 ```

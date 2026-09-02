@@ -76,6 +76,7 @@ export function valoresGND(p) {
 
 // Mesma regra para o total: Valor Negociado Total, com queda para Valor Total.
 export function valorTotal(p) {
+  if (p.consolidada) return (p.gnd3 || 0) + (p.gnd4 || 0);
   if (p.totaln) return p.totaln;
   if (p.total) return p.total;
   const { gnd3, gnd4 } = valoresGND(p);
@@ -100,16 +101,36 @@ function comDescricao(codigo, tabela) {
   return desc ? `${codigo} - ${desc}` : String(codigo);
 }
 
-// Ementa: mesma frase montada pelo modelo do Word, campo a campo.
-export function montarEmenta({ tipo, uf, descricaoAcao, beneficiario, cidade, uoCod, uoNome, objeto }) {
+// Ementa: mesma frase montada pelo modelo do Word, campo a campo. Quando o
+// espelho reúne várias propostas, o texto fixo vai para o plural — "nas (os)",
+// "nos municípios de" — e as listas são separadas por vírgula e "e".
+export function montarEmenta({
+  tipo, uf, descricaoAcao, beneficiario, cidade, uoCod, uoNome, objeto, plural = false,
+}) {
+  const ondeRot = plural ? "nas (os)" : "na (o)";
+  const municipioRot = plural ? "nos municípios de" : "no município de";
   return [
     "Exército Brasileiro",
     tipo || "Emenda",
     uf || "—",
-    `${descricaoAcao || "—"} na (o) ${beneficiario || "—"}, no município de ${cidade || "—"}`
+    `${descricaoAcao || "—"} ${ondeRot} ${beneficiario || "—"}, ${municipioRot} ${cidade || "—"}`
     + ` - Unidade Orçamentária: ${uoCod || "—"} - ${uoNome || "—"} - ${uf || "—"}.`
     + ` ${objeto || ""}`,
   ].join(" – ").trim();
+}
+
+// Justificativa da proposta consolidadora: cabeçalho do CNPJ e, em seguida, um
+// item numerado por proposta com beneficiário, cidade/UF, valor e justificativa.
+function justificativaConsolidada(p) {
+  const linhas = [CNPJ_COMANDO];
+  p.itens.forEach((sub, i) => {
+    const local = [sub.cidade, sub.uf].filter(Boolean).join("/");
+    const valor = `R$ ${moeda(valorTotal(sub))}`;
+    linhas.push(`${i + 1}. Organização Militar Beneficiária: ${sub.beneficiario || "—"}`
+      + `${local ? ` - ${local}` : ""} - ${valor}`);
+    if (sub.justificativa) linhas.push(sub.justificativa);
+  });
+  return linhas.join("\n");
 }
 
 // Reúne tudo que o espelho precisa imprimir.
@@ -119,7 +140,11 @@ export function montarEspelho(p, exercicioForcado) {
   const uoNome = nomeUO(uoCod) || acao?.uoNome || "";
   const exercicio = exercicioForcado || exercicioDe(p) || "";
 
-  const { gnd3, gnd4, negociado } = valoresGND(p);
+  // Na consolidadora os valores já vêm somados dos itens; nas demais vale a
+  // regra do par negociado.
+  const { gnd3, gnd4, negociado } = p.consolidada
+    ? { gnd3: p.gnd3 || 0, gnd4: p.gnd4 || 0, negociado: false }
+    : valoresGND(p);
   const linhas = [];
   if (gnd3) linhas.push({ gnd: "3", gndNome: GND_NOMES[3], valor: gnd3 });
   if (gnd4) linhas.push({ gnd: "4", gndNome: GND_NOMES[4], valor: gnd4 });
@@ -130,12 +155,14 @@ export function montarEspelho(p, exercicioForcado) {
   const funcional = [p.funcao, p.subfuncao, p.programa, p.acao]
     .filter(Boolean).join(".") + (p.acao ? "." : "");
 
-  const justificativa = [
-    CNPJ_COMANDO,
-    `Organização Militar Beneficiária: ${p.beneficiario || "—"}`
-      + (p.cidade || p.uf ? ` - ${[p.cidade, p.uf].filter(Boolean).join("/")}` : ""),
-    p.justificativa || "",
-  ].filter(Boolean).join("\n");
+  const justificativa = p.consolidada
+    ? justificativaConsolidada(p)
+    : [
+      CNPJ_COMANDO,
+      `Organização Militar Beneficiária: ${p.beneficiario || "—"}`
+        + (p.cidade || p.uf ? ` - ${[p.cidade, p.uf].filter(Boolean).join("/")}` : ""),
+      p.justificativa || "",
+    ].filter(Boolean).join("\n");
 
   return {
     exercicio,
@@ -148,6 +175,7 @@ export function montarEspelho(p, exercicioForcado) {
       uoCod,
       uoNome,
       objeto: p.objeto,
+      plural: !!p.consolidada && p.itens.length > 1,
     }),
     sequencial: acao?.seq || "",
     esfera: comDescricao(p.esfera, ESFERAS),
@@ -185,7 +213,7 @@ export function pendencias(p) {
   if (!valorTotal(p)) lista.push("sem valor em GND 3 e GND 4");
   if (!p.objeto) lista.push("sem objeto");
   if (!p.beneficiario) lista.push("sem beneficiário");
-  if (p.rep) lista.push("marcada como repetida na planilha");
+  if (p.rep && !p.consolidada) lista.push("marcada como repetida na planilha");
   return lista;
 }
 

@@ -1,16 +1,19 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Search, ChevronLeft, ChevronRight, FileText, Printer, ArrowLeft,
-  AlertTriangle, Square, CheckSquare, Wallet, ClipboardList, FileDown, UserCheck,
+  AlertTriangle, Wallet, ClipboardList, FileDown, UserCheck, Combine,
 } from "lucide-react";
-import { StatCard, Badge } from "./UI.jsx";
+import { StatCard } from "./UI.jsx";
 import Espelho from "./Espelho.jsx";
+import TabelaPropostas from "./TabelaPropostas.jsx";
 import { supabase } from "../lib/supabaseClient.js";
 import { PROPOSTAS_LEXOR, ACOES_LEXOR } from "../data/lexor.js";
 import {
-  moeda, valorTotal, pendencias, exercicioDe,
-  situacaoDe, SITUACOES, STATUS_LEXOR, STATUS_LEXOR_PADRAO,
+  moeda, valorTotal, exercicioDe, situacaoDe, STATUS_LEXOR_PADRAO,
 } from "../lexorUtils.js";
+import {
+  podeJuntar, proximoNumero, montarConsolidada, autorSugerido,
+} from "../lexorConsolidar.js";
 import { exportarWord } from "../lexorExport.js";
 
 const PAGE_SIZE = 30;
@@ -28,6 +31,8 @@ export default function Lexor() {
   const [pagina, setPagina] = useState(1);
   const [selecionadas, setSelecionadas] = useState(() => new Set());
   const [espelhosDe, setEspelhosDe] = useState(null); // array de propostas em exibição
+  const [consolidadas, setConsolidadas] = useState([]);  // registros do Supabase
+  const [erroJuntar, setErroJuntar] = useState("");
 
   // exercício sugerido pela numeração das propostas, com ajuste manual
   const exercicioPadrao = useMemo(() => {
@@ -74,6 +79,68 @@ export default function Lexor() {
       setErroStatus(true);
     }
   }, [statusLexor]);
+
+  // ---------------------------------------------- propostas consolidadoras
+  useEffect(() => {
+    let vivo = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("lexor_consolidadas").select("*").order("nr");
+      if (!vivo) return;
+      if (error) { setErroStatus(true); return; }
+      setConsolidadas(data || []);
+    })();
+    return () => { vivo = false; };
+  }, []);
+
+  const indicePropostas = useMemo(
+    () => new Map(PROPOSTAS_LEXOR.map(p => [p.nr, p])), []);
+
+  const listaConsolidadas = useMemo(
+    () => consolidadas.map(c => montarConsolidada(c, indicePropostas)).filter(Boolean),
+    [consolidadas, indicePropostas]);
+
+  async function juntarSelecionadas() {
+    setErroJuntar("");
+    const escolhidas = PROPOSTAS_LEXOR.filter(p => selecionadas.has(p.nr));
+    const veredito = podeJuntar(escolhidas);
+    if (!veredito.ok) { setErroJuntar(veredito.erro); return; }
+
+    const nr = proximoNumero(consolidadas);
+    const { parlamentar, partido } = autorSugerido(escolhidas);
+    const { data: sessao } = await supabase.auth.getUser();
+    const registro = {
+      nr,
+      acao: escolhidas[0].acao,
+      propostas: escolhidas.map(p => p.nr),
+      parlamentar, partido,
+      criado_por: sessao?.user?.email || null,
+    };
+    setConsolidadas(prev => [...prev, registro]);   // resposta imediata na tela
+    setSelecionadas(new Set());
+    const { error } = await supabase.from("lexor_consolidadas").insert(registro);
+    if (error) {
+      setConsolidadas(prev => prev.filter(c => c.nr !== nr));
+      setErroJuntar("Não foi possível salvar a proposta consolidadora. "
+        + "Rode o script supabase_lexor_consolidadas.sql no Supabase.");
+    }
+  }
+
+  async function excluirConsolidada(nr) {
+    const anterior = consolidadas;
+    setConsolidadas(prev => prev.filter(c => c.nr !== nr));
+    const { error } = await supabase.from("lexor_consolidadas").delete().eq("nr", nr);
+    if (error) setConsolidadas(anterior);
+  }
+
+  const mudarAutorConsolidada = useCallback((nr, parlamentar, partido) => {
+    setConsolidadas(prev => prev.map(c => (c.nr === nr ? { ...c, parlamentar } : c)));
+    clearTimeout(mudarAutorConsolidada.timer);
+    // grava depois que o usuário para de digitar, para não bater no banco a cada tecla
+    mudarAutorConsolidada.timer = setTimeout(() => {
+      supabase.from("lexor_consolidadas").update({ parlamentar, partido }).eq("nr", nr);
+    }, 600);
+  }, []);
 
   const opcoes = useMemo(() => {
     const ufs = new Set(), acoes = new Set(), cmdos = new Set(), tipos = new Set();
@@ -132,7 +199,7 @@ export default function Lexor() {
   }
 
   function abrirSelecionadas() {
-    const lista = filtradas.filter(p => selecionadas.has(p.nr));
+    const lista = [...filtradas, ...listaConsolidadas].filter(p => selecionadas.has(p.nr));
     if (lista.length) setEspelhosDe(lista);
   }
 
@@ -173,7 +240,7 @@ export default function Lexor() {
 
   // ------------------------------------------------------------------- lista
   return (
-    <div className="view-pad">
+    <div className="view-pad view-pad-lexor">
       <h1 className="page-title">Espelhos de emenda — LEXOR</h1>
       <p className="page-sub">
         {PROPOSTAS_LEXOR.length.toLocaleString("pt-BR")} propostas do Controle_LEXOR.
@@ -230,18 +297,28 @@ export default function Lexor() {
             </button>
           ))}
         </div>
-        <label className="lexor-exercicio">
-          Exercício
-          <input className="input" type="number" min="2020" max="2099" value={exercicio}
-            onChange={e => setExercicio(Number(e.target.value))} />
-        </label>
         <div className="lexor-acoes-dir">
-          <span className="page-info">{selecionadas.size} selecionada(s)</span>
-          <button className="btn btn-primary btn-sm" disabled={selecionadas.size === 0} onClick={abrirSelecionadas}>
+          <label className="lexor-exercicio">
+            Exercício
+            <input className="input" type="number" min="2020" max="2099" value={exercicio}
+              onChange={e => setExercicio(Number(e.target.value))} />
+          </label>
+          <button className="btn btn-primary btn-sm" disabled={selecionadas.size === 0}
+            onClick={abrirSelecionadas}>
             <FileText size={15} /> Gerar espelhos
           </button>
+          <button className="btn btn-ghost btn-sm" disabled={selecionadas.size < 2}
+            onClick={juntarSelecionadas}
+            title="Reúne as propostas selecionadas num único espelho (mesma ação orçamentária)">
+            <Combine size={15} /> Juntar propostas
+          </button>
+          <span className="page-info">{selecionadas.size} selecionada(s)</span>
         </div>
       </div>
+
+      {erroJuntar && (
+        <div className="lexor-aviso-erro">{erroJuntar}</div>
+      )}
 
       {erroStatus && (
         <div className="lexor-aviso-erro">
@@ -250,74 +327,55 @@ export default function Lexor() {
         </div>
       )}
 
-      <div className="table-wrap">
-        <table className="tbl tbl-lexor">
-          <thead>
-            <tr>
-              <th className="col-check">
-                <button className="icon-btn" onClick={alternarPagina} title="Selecionar a página">
-                  {pageItems.length > 0 && pageItems.every(p => selecionadas.has(p.nr))
-                    ? <CheckSquare size={15} /> : <Square size={15} />}
-                </button>
-              </th>
-              <th className="col-acao">Espelho</th>
-              <th>Nº</th><th>Beneficiário</th><th>Município / UF</th>
-              <th>Ação</th><th className="esp-right">Valor</th><th>Autor</th>
-              <th>Situação</th><th>LEXOR</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageItems.map(p => {
-              const probs = pendencias(p);
-              const sit = situacaoDe(p);
-              const status = statusLexor[p.nr] || STATUS_LEXOR_PADRAO;
-              return (
-                <tr key={p.nr} className={selecionadas.has(p.nr) ? "row-sel" : ""}>
-                  <td className="col-check">
-                    <button className="icon-btn" onClick={() => alternar(p.nr)}>
-                      {selecionadas.has(p.nr) ? <CheckSquare size={15} /> : <Square size={15} />}
-                    </button>
-                  </td>
-                  <td className="col-acao">
-                    <button className="icon-btn edit" title="Ver espelho de emenda"
-                      onClick={() => setEspelhosDe([p])}>
-                      <FileText size={15} />
-                    </button>
-                  </td>
-                  <td className="mono">{p.nr}</td>
-                  <td className="cel-benef">{p.beneficiario || <span className="muted">sem beneficiário</span>}</td>
-                  <td>{p.cidade || "—"} <span className="mono">{p.uf || ""}</span></td>
-                  <td className="mono">{p.acao || "—"}</td>
-                  <td className="mono esp-right">{moeda(valorTotal(p))}</td>
-                  <td>{p.parlamentar ? `${p.parlamentar}${p.partido ? ` (${p.partido})` : ""}` : <span className="muted">a definir</span>}</td>
-                  <td>
-                    <span title={probs.length ? probs.join(" · ") : undefined}>
-                      <Badge tone={SITUACOES[sit].tone}>{SITUACOES[sit].rotulo}</Badge>
-                    </span>
-                  </td>
-                  <td>
-                    <select className={`select-status status-${status.toLowerCase()}`}
-                      value={status} disabled={erroStatus}
-                      onChange={e => mudarStatus(p.nr, e.target.value)}>
-                      {STATUS_LEXOR.map(v => <option key={v} value={v}>{v}</option>)}
-                    </select>
-                    {salvando === p.nr && <span className="salvando">salvando…</span>}
-                  </td>
-                </tr>
-              );
-            })}
-            {pageItems.length === 0 && (
-              <tr><td colSpan={10} className="empty-row">Nenhuma proposta encontrada com esses filtros.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <TabelaPropostas
+        itens={pageItems}
+        selecionadas={selecionadas}
+        aoAlternar={alternar}
+        aoAlternarTodos={alternarPagina}
+        aoAbrirEspelho={p => setEspelhosDe([p])}
+        statusLexor={statusLexor}
+        aoMudarStatus={mudarStatus}
+        salvando={salvando}
+        erroStatus={erroStatus}
+      />
 
       <div className="pagination">
         <button className="icon-btn" disabled={pagina <= 1} onClick={() => setPagina(p => p - 1)}><ChevronLeft size={16} /></button>
         <span className="page-info">Página {pagina} de {totalPaginas} · {filtradas.length.toLocaleString("pt-BR")} propostas</span>
         <button className="icon-btn" disabled={pagina >= totalPaginas} onClick={() => setPagina(p => p + 1)}><ChevronRight size={16} /></button>
       </div>
+
+      <h2 className="lexor-subtitulo">
+        Propostas consolidadoras
+        <span className="lexor-subtitulo-sub">
+          {listaConsolidadas.length === 0
+            ? "nenhuma criada até agora"
+            : `${listaConsolidadas.length} proposta(s) reunindo várias emendas num só espelho`}
+        </span>
+      </h2>
+
+      <TabelaPropostas
+        consolidadora
+        itens={listaConsolidadas}
+        selecionadas={selecionadas}
+        aoAlternar={alternar}
+        aoAlternarTodos={() => {
+          const todos = listaConsolidadas.every(p => selecionadas.has(p.nr));
+          setSelecionadas(prev => {
+            const set = new Set(prev);
+            for (const p of listaConsolidadas) todos ? set.delete(p.nr) : set.add(p.nr);
+            return set;
+          });
+        }}
+        aoAbrirEspelho={p => setEspelhosDe([p])}
+        statusLexor={statusLexor}
+        aoMudarStatus={mudarStatus}
+        salvando={salvando}
+        erroStatus={erroStatus}
+        aoMudarAutor={mudarAutorConsolidada}
+        aoExcluir={excluirConsolidada}
+        vazio="Selecione duas ou mais propostas da mesma ação e use “Juntar propostas”."
+      />
     </div>
   );
 }

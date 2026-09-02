@@ -419,10 +419,21 @@ select.input option { background: var(--surface-solid); color: var(--ink); }
 .lexor-acoes .chip { display: inline-flex; align-items: center; gap: 6px; }
 .lexor-exercicio { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
 .lexor-exercicio .input { width: 92px; font-family: var(--font-mono); padding: 6px 9px; }
-.lexor-acoes-dir { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.lexor-acoes-dir { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+
+.lexor-subtitulo {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  font-family: var(--font-display); font-size: 21px; font-weight: 600;
+  color: var(--ink); margin: 34px 0 12px;
+}
+.lexor-subtitulo-sub { font-family: var(--font-body); font-size: 12.5px; font-weight: 400; color: var(--muted); }
 @media (max-width: 640px) { .lexor-acoes-dir { margin-left: 0; width: 100%; justify-content: space-between; } }
 
-.tbl-lexor { min-width: 1080px; }
+/* O módulo LEXOR usa um card mais largo para a tabela caber sem rolagem
+   horizontal: são dez colunas, uma delas com lista suspensa. */
+.view-pad-lexor { max-width: 1560px; }
+.tbl-lexor { min-width: 1160px; }
+.tbl-lexor th, .tbl-lexor td { padding-left: 10px; padding-right: 10px; }
 
 /* filtro sem seleção: o nome da categoria funciona como marca d'água */
 .input-marca { color: var(--muted); }
@@ -448,7 +459,12 @@ select.input option { background: var(--surface-solid); color: var(--ink); }
 }
 .lexor-aviso-erro code { font-family: var(--font-mono); font-size: 11.5px; }
 .tbl-lexor .col-check { width: 34px; padding-left: 8px; padding-right: 0; }
-.tbl-lexor .cel-benef { max-width: 260px; }
+.tbl-lexor .cel-benef { max-width: 300px; }
+.tbl-lexor .cel-local { max-width: 220px; }
+.cel-origem { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; }
+.input-autor { width: 100%; min-width: 150px; padding: 5px 8px; font-size: 12.5px; }
+.tbl-lexor .col-acao .icon-btn.del { color: #E88C84; }
+.tbl-lexor .col-acao .icon-btn.del:hover { background: rgba(214,104,95,0.18); color: #fff; }
 .tbl-lexor .row-sel td { background: rgba(78,154,107,0.10); }
 
 /* A coluna do espelho fica no início da linha. Ela já esteve no fim, mas a
