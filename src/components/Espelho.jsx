@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { montarEspelho, moeda, pendencias, CABECALHO } from "../lexorUtils.js";
+import brasaoRepublica from "../brasao-republica.png";
 
 // Desenha uma folha de espelho de emenda no layout do "Relatório de espelho de
 // Emendas" do Lexor. Fundo branco e tipografia próprios, independentes do tema
@@ -65,6 +66,7 @@ export default function Espelho({ proposta, exercicio }) {
     <div className="espelho-folha lx">
       {/* ---------------------------------------------------------- cabeçalho */}
       <div className="lx-topo">
+        <img src={brasaoRepublica} className="lx-brasao" alt="Brasão de Armas da República Federativa do Brasil" />
         <div className="lx-topo-txt">
           <div>{CABECALHO.orgao}</div>
           <div>{CABECALHO.comissao}</div>

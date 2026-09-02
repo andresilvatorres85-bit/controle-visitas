@@ -63,8 +63,23 @@ export function moeda(v) {
   return (v || 0).toLocaleString("pt-BR");
 }
 
+// Regra de valores: prevalece o par negociado (Valor Negociado GND 3 / GND 4).
+// Se os dois estiverem zerados ou vazios, usa o par original (Valor GND 3 / 4).
+export function valoresGND(p) {
+  const negociado = !!((p.gnd3n || 0) || (p.gnd4n || 0));
+  return {
+    gnd3: negociado ? (p.gnd3n || 0) : (p.gnd3 || 0),
+    gnd4: negociado ? (p.gnd4n || 0) : (p.gnd4 || 0),
+    negociado,
+  };
+}
+
+// Mesma regra para o total: Valor Negociado Total, com queda para Valor Total.
 export function valorTotal(p) {
-  return (p.gnd3 || 0) + (p.gnd4 || 0);
+  if (p.totaln) return p.totaln;
+  if (p.total) return p.total;
+  const { gnd3, gnd4 } = valoresGND(p);
+  return gnd3 + gnd4;
 }
 
 // O exercício vem dos 4 primeiros dígitos do Nr Proposta (ex.: 20270032 -> 2027)
@@ -104,10 +119,12 @@ export function montarEspelho(p, exercicioForcado) {
   const uoNome = nomeUO(uoCod) || acao?.uoNome || "";
   const exercicio = exercicioForcado || exercicioDe(p) || "";
 
+  const { gnd3, gnd4, negociado } = valoresGND(p);
   const linhas = [];
-  if (p.gnd3) linhas.push({ gnd: "3", gndNome: GND_NOMES[3], valor: p.gnd3 });
-  if (p.gnd4) linhas.push({ gnd: "4", gndNome: GND_NOMES[4], valor: p.gnd4 });
-  const total = valorTotal(p);
+  if (gnd3) linhas.push({ gnd: "3", gndNome: GND_NOMES[3], valor: gnd3 });
+  if (gnd4) linhas.push({ gnd: "4", gndNome: GND_NOMES[4], valor: gnd4 });
+  // o cancelamento compensatório acompanha a soma dos acréscimos do espelho
+  const total = gnd3 + gnd4;
 
   // Funcional programática no formato do Lexor: 05.301.0032.2E74.
   const funcional = [p.funcao, p.subfuncao, p.programa, p.acao]
@@ -115,7 +132,8 @@ export function montarEspelho(p, exercicioForcado) {
 
   const justificativa = [
     CNPJ_COMANDO,
-    `Organização Militar Beneficiária: ${p.beneficiario || "—"}`,
+    `Organização Militar Beneficiária: ${p.beneficiario || "—"}`
+      + (p.cidade || p.uf ? ` - ${[p.cidade, p.uf].filter(Boolean).join("/")}` : ""),
     p.justificativa || "",
   ].filter(Boolean).join("\n");
 
@@ -152,20 +170,40 @@ export function montarEspelho(p, exercicioForcado) {
     cancelamento: { ...CANCELAMENTO_PADRAO, valor: total },
     justificativa,
     autor: [p.parlamentar, p.partido ? `(${p.partido})` : ""].filter(Boolean).join(" "),
+    negociado,
     temAcao: !!acao,
   };
 }
 
-// Lista o que impede a emenda de ser exportada ao LEXOR, para sinalizar na tela.
+// Informações que faltam para montar o espelho. A ausência de autor não entra
+// aqui: ela define a prospecção, tratada em situacaoDe().
 export function pendencias(p) {
   const lista = [];
   if (!p.acao) lista.push("sem código de ação");
   else if (!ACOES_LEXOR[p.acao]) lista.push(`ação ${p.acao} não cadastrada na aba Ações`);
   else if (!ACOES_LEXOR[p.acao].seq) lista.push("ação sem Sequencial SOF");
-  if (!p.parlamentar) lista.push("sem parlamentar autor");
   if (!valorTotal(p)) lista.push("sem valor em GND 3 e GND 4");
   if (!p.objeto) lista.push("sem objeto");
   if (!p.beneficiario) lista.push("sem beneficiário");
   if (p.rep) lista.push("marcada como repetida na planilha");
   return lista;
 }
+
+// Situação exibida na tabela geral:
+//   pendencia      — falta informação para montar o espelho (amarelo)
+//   prospectada    — tem parlamentar autor definido (verde)
+//   nao_prospectada— sem autor, mas com os demais dados completos (vermelho)
+export const SITUACOES = {
+  prospectada: { rotulo: "Prospectada", tone: "novo" },
+  nao_prospectada: { rotulo: "Não Prospectada", tone: "erro" },
+  pendencia: { rotulo: "Pendência", tone: "alerta" },
+};
+
+export function situacaoDe(p) {
+  if (pendencias(p).length > 0) return "pendencia";
+  return p.parlamentar ? "prospectada" : "nao_prospectada";
+}
+
+// Status de tramitação no LEXOR, editado à mão na tabela geral.
+export const STATUS_LEXOR = ["Aguardando", "Confeccionado", "Exportado"];
+export const STATUS_LEXOR_PADRAO = "Aguardando";

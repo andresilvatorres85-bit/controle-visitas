@@ -191,8 +191,14 @@ def main():
         tipo, repetida = classifica_tipo(ws.cell(r, 2).value)
         uo_cod = fp.get("uo", "") or acoes.get(acao, {}).get("uoCod", "")
 
+        # Valores originais (M/N/O) e negociados (AG/AH/AI). O espelho usa os
+        # negociados; se o par negociado estiver zerado, cai nos originais.
         gnd3 = num(ws.cell(r, 13).value)
         gnd4 = num(ws.cell(r, 14).value)
+        gnd3n = num(ws.cell(r, 33).value)
+        gnd4n = num(ws.cell(r, 34).value)
+        total = num(ws.cell(r, 15).value) or (gnd3 + gnd4)
+        totaln = num(ws.cell(r, 35).value)
 
         registro = {
             "nr": nr,
@@ -213,6 +219,10 @@ def main():
             "subtitulo": fp.get("subtitulo") or "XXXX",
             "gnd3": gnd3,
             "gnd4": gnd4,
+            "gnd3n": gnd3n,
+            "gnd4n": gnd4n,
+            "total": total,
+            "totaln": totaln,
             "justificativa": frase(ws.cell(r, 16).value),
             "cmdo": limpa(ws.cell(r, 21).value),
             "catalogo": limpa(ws.cell(r, 22).value),
@@ -236,7 +246,10 @@ def main():
     sem_acao = [p["nr"] for p in props if not p.get("acao") or p.get("acao") not in acoes]
     div_uo = [p["nr"] for p in props
               if p.get("acao") in acoes and p.get("uo") and p["uo"] != acoes[p["acao"]]["uoCod"]]
-    sem_valor = [p["nr"] for p in props if p.get("gnd3",0) + p.get("gnd4",0) == 0]
+    sem_valor = [p["nr"] for p in props
+                 if p.get("gnd3", 0) + p.get("gnd4", 0)
+                 + p.get("gnd3n", 0) + p.get("gnd4n", 0) == 0]
+    negociados = [p["nr"] for p in props if p.get("gnd3n", 0) or p.get("gnd4n", 0)]
     sem_autor = [p["nr"] for p in props if not p.get("parlamentar")]
 
     cab = f"""// GERADO AUTOMATICAMENTE a partir de Controle_LEXOR.xlsx — não editar à mão.
@@ -254,6 +267,7 @@ def main():
 //   · {len(sem_acao)} propostas sem ação correspondente na aba Ações
 //   · {len(div_uo)} propostas com UO divergente entre a Funcional Programática e a aba Ações
 //   · {len(sem_valor)} propostas sem valor em GND 3 e GND 4
+//   · {len(negociados)} propostas com valor negociado (prevalece sobre o valor original)
 //   · {len(sem_autor)} propostas sem parlamentar autor definido
 """
 

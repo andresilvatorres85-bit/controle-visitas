@@ -188,6 +188,7 @@ src/
   lexorUtils.js             # monta o espelho a partir da proposta
   lexorExport.js            # exportação dos espelhos para o Word
 gerar_lexor.py              # converte Controle_LEXOR.xlsx em src/data/lexor.js
+supabase_lexor_status.sql   # cria a tabela da coluna LEXOR (rodar uma vez)
 supabase_setup.sql          # script para criar a tabela e as permissões
 .github/workflows/deploy.yml # publica automaticamente no GitHub Pages
 ```
