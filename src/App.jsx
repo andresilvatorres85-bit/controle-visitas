@@ -161,7 +161,7 @@ export default function App() {
         <nav className="subnav" ref={subnavRef} aria-label="Seções de Métricas">
           {NAV.map(n => (
             <button key={n.id} className={`subnav-btn ${view === n.id ? "subnav-btn-active" : ""}`} onClick={() => setView(n.id)}>
-              <n.icon size={15} strokeWidth={1.75} /> {n.id === "novo" ? "+ Lançar" : n.label}
+              <n.icon size={15} strokeWidth={1.75} /> {n.label}
             </button>
           ))}
         </nav>

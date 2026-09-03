@@ -326,6 +326,21 @@ select.input option { background: var(--surface-solid); color: var(--ink); }
 @media (min-width: 640px) { .stat-grid-3 { grid-template-columns: repeat(3, 1fr); } }
 .stat-grid-3 .stat-value { font-size: 30px; }
 
+/* Painel de contatos: cards maiores, mais respiráveis e melhor distribuídos */
+.stat-grid-painel { gap: 16px; margin-bottom: 24px; }
+.stat-grid-painel .stat-card {
+  padding: 24px 26px; border-radius: 14px;
+  display: flex; flex-direction: column; justify-content: center; min-height: 132px;
+}
+.stat-grid-painel .stat-card-top { margin-bottom: 14px; }
+.stat-grid-painel .stat-label { font-size: 13px; }
+.stat-grid-painel .stat-icon { width: 20px; height: 20px; }
+.stat-grid-painel .stat-value { font-size: 40px; }
+@media (min-width: 640px) {
+  .stat-grid-painel { gap: 20px; }
+  .stat-grid-painel .stat-value { font-size: 44px; }
+}
+
 /* Botões de exportação por gráfico */
 .chart-actions { display: flex; gap: 6px; }
 .mini-btn {

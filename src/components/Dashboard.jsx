@@ -157,7 +157,7 @@ export default function Dashboard({ allRecords, novos }) {
         </div>
       </div>
 
-      <div className="stat-grid stat-grid-3">
+      <div className="stat-grid stat-grid-3 stat-grid-painel">
         <StatCard label="Total geral (desde mai/24)" value={totalGeral.toLocaleString("pt-BR")} icon={BookUser} />
         <StatCard label={anosOrd.length > 1 ? "Total no período" : `Total em ${anosOrd[0]}`} value={totalPeriodo.toLocaleString("pt-BR")} icon={Landmark} />
         <StatCard label="Neste mês" value={totalMes.toLocaleString("pt-BR")} icon={Users} />
